@@ -18,4 +18,4 @@ def onEvent(evt):
 #    analysis.event.printID(evt['eventID'])
     analysis.event.plotFiducial(evt['eventID'])
     analysis.event.printProcessingRate(evt)
-    time.sleep(1)
+    time.sleep(0.2)
