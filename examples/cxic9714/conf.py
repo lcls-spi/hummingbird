@@ -5,7 +5,8 @@ import analysis.pixel_detector
 
 state = {
     'Facility': 'LCLS',
-    'LCLS/DataSource': '/data/rawdata/LCLS/cxi/cxic9714/xtc/e419-r0263-s03-c00.xtc'
+    #'LCLS/DataSource': '/data/rawdata/LCLS/cxi/cxic9714/xtc/e419-r0263-s03-c00.xtc'
+    'LCLS/DataSource': 'exp=cxic9714:run=199:xtc'
 }
 
 def onEvent(evt):
