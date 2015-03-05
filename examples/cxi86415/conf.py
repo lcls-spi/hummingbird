@@ -13,15 +13,15 @@ state = {
     'LCLS/PsanaConf': 'small_back.cfg',
 
     'aduThreshold': 0,
-    'aduPhoton': 10,
+    'aduPhoton': 1,
 
     'meanPhotonMap/initialize': True,
-    'meanPhotonMap/paramXmin': -2,
-    'meanPhotonMap/paramXmax':  2,
-    'meanPhotonMap/paramYmin': -2,
-    'meanPhotonMap/paramYmax':  2,
-    'meanPhotonMap/paramXbin':  0.01,
-    'meanPhotonMap/paramYbin':  0.01,
+    'meanPhotonMap/paramXmin': 0,
+    'meanPhotonMap/paramXmax': 1000,
+    'meanPhotonMap/paramYmin': -20000,
+    'meanPhotonMap/paramYmax': -15000,
+    'meanPhotonMap/paramXbin': 10,
+    'meanPhotonMap/paramYbin': 10,
     'meanPhotonMap/updateRate': 100
 }
 
@@ -29,7 +29,11 @@ def onEvent(evt):
     #print evt.nativeKeys()
     #print evt.keys()
     #print evt['parameters'].keys()
-    #print evt['calibrated'].keys()
+    #print evt['calibrated'].keys(
+    print evt['parameters']['ap1_x'].data
+    print evt['parameters']['ap1_y'].data
+
+    analysis.pixel_detector.plotDetector(evt['calibrated']['CsPad Dg3 [calibrated]'])
     nrPhotons = analysis.pixel_detector.countNrPhotons(evt['calibrated']['CsPad Dg3 [calibrated]'].data)
     analysis.background.plotMeanPhotonMap(nrPhotons, evt['parameters']['ap1_x'].data, evt['parameters']['ap1_y'].data)
     
