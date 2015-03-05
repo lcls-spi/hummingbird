@@ -11,8 +11,8 @@ state = {
 }
 
 def onEvent(evt):
-    #print evt.nativeKeys()
-    #print evt['photonPixelDetectors'].keys()
+    #print evt.keys()
+    print evt['photonPixelDetectors'].keys()
     #analysis.beamline.plotPulseEnergy(evt['pulseEnergies'])
 #    analysis.beamline.printPulseEnergy(evt['pulseEnergies'])
 #    analysis.beamline.printPhotonEnergy(evt['photonEnergies'])
@@ -20,7 +20,7 @@ def onEvent(evt):
 #    analysis.pixel_detector.printStatistics(evt['photonPixelDetectors'])
 #    analysis.pixel_detector.printStatistics(evt['ionTOFs'])
 #    analysis.event.printID(evt['eventID'])
-    analysis.event.plotFiducial(evt['eventID'])
+    #analysis.event.plotFiducial(evt['eventID'])
     analysis.event.printProcessingRate(evt)
-    #analysis.pixel_detector.plotImages(evt['photonPixelDetectors'])
+    analysis.pixel_detector.plotImages(evt['reconstructed'])
     time.sleep(1)
