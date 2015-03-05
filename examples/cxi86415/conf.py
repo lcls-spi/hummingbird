@@ -11,9 +11,9 @@ state = {
 }
 
 def onEvent(evt):
-    print evt.nativeKeys()
+    #print evt.nativeKeys()
     #print evt['photonPixelDetectors'].keys()
-    analysis.beamline.plotPulseEnergy(evt['pulseEnergies'])
+    #analysis.beamline.plotPulseEnergy(evt['pulseEnergies'])
 #    analysis.beamline.printPulseEnergy(evt['pulseEnergies'])
 #    analysis.beamline.printPhotonEnergy(evt['photonEnergies'])
 #    print "EPICS photon energy = %g eV" %(evt['parameters']['SIOC:SYS0:ML00:AO541'].data)
@@ -22,4 +22,5 @@ def onEvent(evt):
 #    analysis.event.printID(evt['eventID'])
     #analysis.event.plotFiducial(evt['eventID'])
     analysis.event.printProcessingRate(evt)
+    analysis.pixel_detector.plotImages(evt['photonPixelDetectors'])
     time.sleep(1)
