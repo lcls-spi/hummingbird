@@ -6,11 +6,13 @@ import analysis.pixel_detector
 state = {
     'Facility': 'LCLS',
 #    'LCLS/DataSource': '/reg/neh/home2/benedikt/data/cxi/cxic9714/xtc/e419-r0199-s09-c00.xtc'
-    'LCLS/DataSource': 'shmem=CXI.0:stop=no'
+    'LCLS/DataSource': 'shmem=CXI.0:stop=no',
+    'LCLS/PsanaConf': 'psana.conf'
 }
 
 def onEvent(evt):
-    #print evt.keys()
+    print evt.nativeKeys()
+    #print evt['photonPixelDetectors'].keys()
     analysis.beamline.plotPulseEnergy(evt['pulseEnergies'])
 #    analysis.beamline.printPulseEnergy(evt['pulseEnergies'])
 #    analysis.beamline.printPhotonEnergy(evt['photonEnergies'])
