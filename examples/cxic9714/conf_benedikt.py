@@ -5,8 +5,7 @@ import analysis.pixel_detector
 
 state = {
     'Facility': 'LCLS',
-    #'LCLS/DataSource': '/data/rawdata/LCLS/cxi/cxic9714/xtc/e419-r0263-s03-c00.xtc'
-    'LCLS/DataSource': 'exp=cxic9714:run=199:xtc'
+    'LCLS/DataSource': '/home/benedikt//data/e419-r0199-s80-c00.xtc'
 }
 
 def onEvent(evt):
@@ -18,5 +17,5 @@ def onEvent(evt):
 #    analysis.pixel_detector.printStatistics(evt['ionTOFs'])
 #    analysis.event.printID(evt['eventID'])
 #    analysis.event.plotFiducial(evt['eventID'])
-    analysis.event.printProcessingRate(evt)
+    lanalysis.event.printProcessingRate(evt)
     time.sleep(1)
