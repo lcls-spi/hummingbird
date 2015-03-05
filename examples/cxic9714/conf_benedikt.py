@@ -5,10 +5,11 @@ import analysis.pixel_detector
 
 state = {
     'Facility': 'LCLS',
-    'LCLS/DataSource': '/home/benedikt//data/e419-r0199-s80-c00.xtc'
+    'LCLS/DataSource': '/reg/neh/home2/benedikt/data/cxi/cxic9714/xtc/e419-r0199-s09-c00.xtc'
 }
 
 def onEvent(evt):
+#    print evt["parameters"].keys()
     analysis.beamline.plotPulseEnergy(evt['pulseEnergies'])
 #    analysis.beamline.printPulseEnergy(evt['pulseEnergies'])
 #    analysis.beamline.printPhotonEnergy(evt['photonEnergies'])
@@ -16,6 +17,6 @@ def onEvent(evt):
 #    analysis.pixel_detector.printStatistics(evt['photonPixelDetectors'])
 #    analysis.pixel_detector.printStatistics(evt['ionTOFs'])
 #    analysis.event.printID(evt['eventID'])
-#    analysis.event.plotFiducial(evt['eventID'])
-    lanalysis.event.printProcessingRate(evt)
+    analysis.event.plotFiducial(evt['eventID'])
+    analysis.event.printProcessingRate(evt)
     time.sleep(1)
