@@ -17,12 +17,12 @@ state = {
 
     'meanPhotonMap': {
         'aperture1': {
-            'paramXmin': 0,
-            'paramXmax': 1000,
-            'paramYmin': -20000,
-            'paramYmax': -15000,
-            'paramXbin': 10,
-            'paramYbin': 10,
+            'paramXmin': -10000,
+            'paramXmax':  10000,
+            'paramYmin': -10000,
+            'paramYmax':  10000,
+            'paramXbin':  1000,
+            'paramYbin':  1000,
             'updateRate': 100
             },
         'aperture2': {
