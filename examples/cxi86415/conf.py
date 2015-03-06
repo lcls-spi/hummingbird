@@ -26,8 +26,8 @@ state = {
             'paramXmax':  10000,
             'paramYmin': -10000,
             'paramYmax':  10000,
-            'paramXbin':  100,
-            'paramYbin':  100,
+            'paramXstep': 100,
+            'paramYstep': 100,
             'updateRate': 500
             },
         'aperture2': {
@@ -35,8 +35,8 @@ state = {
             'paramXmax':  10000,
             'paramYmin': -10000,
             'paramYmax':  10000,
-            'paramXbin':  100,
-            'paramYbin':  100,
+            'paramXstep': 100,
+            'paramYstep': 100,
             'updateRate': 500
             },
         'aperture3': {
@@ -44,8 +44,8 @@ state = {
             'paramXmax':  10000,
             'paramYmin': -10000,
             'paramYmax':  10000,
-            'paramXbin':  100,
-            'paramYbin':  100,
+            'paramXstep': 100,
+            'paramYstep': 100,
             'updateRate': 500
             }
         }
