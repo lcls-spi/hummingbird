@@ -58,6 +58,11 @@ def onEvent(evt):
     # Detector calibration and other stuff
     #analysis.pixel_detector.plotDetector(evt['calibrated']['CsPad Dg3 [calibrated]'])
 
+    # Pulse energies
+    #print evt["pulseEnergies"]
+    analysis.beamline.plotPulseEnergy(evt["pulseEnergies"])
+    pulseEnergy = analysis.beamline.averagePulseEnergies(evt["pulseEnergies"])
+
     # Counting photons on the small back detector
     nrPhotons = analysis.pixel_detector.countNrPhotons(evt['calibrated']['CsPad Dg3 [calibrated]'])
     analysis.pixel_detector.plotNrPhotons("CsPad2x2 - Nr. of Photons (adup = %d, th = %d)" %(state["aduPhoton"], state["aduThreshold"]), nrPhotons)
@@ -65,21 +70,21 @@ def onEvent(evt):
     # Mean Photon Map for Alignment of Aperture 1
     #print "Aperture 1, position in x: ", evt['parameters']['ap1_x'].data
     #print "Aperture 1, position in y: ", evt['parameters']['ap1_y'].data
-    #analysis.background.plotMeanPhotonMap('aperture1', state["meanPhotonMap"]["aperture1"], nrPhotons, evt['parameters']['ap1_x'], evt['parameters']['ap1_y'])
+    analysis.background.plotMeanPhotonMap('aperture1', state["meanPhotonMap"]["aperture1"], nrPhotons, evt['parameters']['ap1_x'], evt['parameters']['ap1_y'], pulseEnergy)
     analysis.background.plotAperturePos(evt['parameters']['ap1_x'])
     analysis.background.plotAperturePos(evt['parameters']['ap1_y'])
 
     # Mean Photon Map for Alignment of Aperture 3
     #print "Aperture 2, position in x: ", evt['parameters']['ap2_x'].data
     #print "Aperture 2, position in y: ", evt['parameters']['ap2_y'].data
-    #analysis.background.plotMeanPhotonMap('aperture2', state["meanPhotonMap"]["aperture2"], nrPhotons, evt['parameters']['ap2_x'], evt['parameters']['ap2_y'])
+    analysis.background.plotMeanPhotonMap('aperture2', state["meanPhotonMap"]["aperture2"], nrPhotons, evt['parameters']['ap2_x'], evt['parameters']['ap2_y'], pulseEnergy)
     analysis.background.plotAperturePos(evt['parameters']['ap2_x'])
     analysis.background.plotAperturePos(evt['parameters']['ap2_y'])
     
     # Mean Photon Map for Alignment of Aperture 3
     #print "Aperture 3, position in x: ", evt['parameters']['ap3_x'].data
     #print "Aperture 3, position in y: ", evt['parameters']['ap3_y'].data
-    #analysis.background.plotMeanPhotonMap('aperture3', state["meanPhotonMap"]["aperture3"], nrPhotons, evt['parameters']['ap3_x'], evt['parameters']['ap3_y'])
+    analysis.background.plotMeanPhotonMap('aperture3', state["meanPhotonMap"]["aperture3"], nrPhotons, evt['parameters']['ap3_x'], evt['parameters']['ap3_y'], pulseEnergy)
     analysis.background.plotAperturePos(evt['parameters']['ap3_x'])
     analysis.background.plotAperturePos(evt['parameters']['ap3_y'])
 
