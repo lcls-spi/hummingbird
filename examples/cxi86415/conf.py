@@ -57,8 +57,15 @@ def onEvent(evt):
     #print "EPICS keys: ", evt["parameters"].keys()
     #print "Detectors: ", evt["photonPixelDetectors"].keys()
 
+    # What detector to use
+    try:
+        cspad = evt["calibrated"]["CsPad Ds2 [calibrated]"]
+    except TypeError:
+        print "No detector available"
+        return
+
     # Detector calibration and other stuff
-    #analysis.pixel_detector.plotDetector(evt['calibrated']['CsPad Dg3 [calibrated]'])
+    analysis.pixel_detector.plotDetector(cspad)
 
     # Pulse energies
     #print evt["pulseEnergies"]
@@ -67,13 +74,13 @@ def onEvent(evt):
 
     # Reshape CSPAD Ds2 detector
     #print evt["calibrated"]["CsPad Ds2 [calibrated]"].data
-    evt["photonPixelDetectors"]["CsPad Ds2 central"] =  analysis.pixel_detector.reshape_detector(evt["calibrated"]["CsPad Ds2 [calibrated]"])
+    cspad =  analysis.pixel_detector.reshape_detector(cspad)
 
     #print evt["photonPixelDetectors"]["CsPad Ds2 central"]
     # Counting photons on the small back detector
     #nrPhotons = analysis.pixel_detector.countNrPhotons(evt['calibrated']['CsPad Dg3 [calibrated]'].data)
     #analysis.pixel_detector.plotNrPhotons("CsPad2x2 - Nr. of Photons (adup = %d, th = %d)" %(state["aduPhoton"], state["aduThreshold"]), nrPhotons)
-    nrPhotons = analysis.pixel_detector.countNrPhotons(evt['photonPixelDetectors']['CsPad Ds2 central'])
+    nrPhotons = analysis.pixel_detector.countNrPhotons(cspad)
     analysis.pixel_detector.plotNrPhotons("CsPad Ds2 - Nr. of Photons (adup = %d, th = %d)" %(state["aduPhoton"], state["aduThreshold"]), nrPhotons)
 
     # Mean Photon Map for Alignment of Aperture 1
@@ -99,7 +106,7 @@ def onEvent(evt):
 
     # Hitfinding
     # hit, hitscore = analysis.hitfinding.countLitPixels(evt['calibrated']['CsPad Dg3 [calibrated]'])
-    hit, hitscore = analysis.hitfinding.countLitPixels(evt['photonPixelDetectors']['CsPad Ds2 central'])
+    hit, hitscore = analysis.hitfinding.countLitPixels(cspad)
     analysis.hitfinding.plotHitscore(hitscore)
 
     # How fast are we processing the data?
