@@ -11,11 +11,14 @@ state = {
 
     'LCLS/DataSource': 'shmem=CXI.0:stop=no',
     #'LCLS/DataSource': 'exp=cxi86415:run=17:xtc',
-    #'LCLS/PsanaConf': 'small_back.cfg',
-    'LCLS/PsanaConf': 'back.cfg',
-    #'LCLS/PsanaConf': 'back_with_geometry.cfg',
+    #'LCLS/PsanaConf': 'Dg3.cfg',
+    #'LCLS/PsanaConf': 'Dg3_recons.cfg',
+    'LCLS/PsanaConf': 'Ds2.cfg',
+    #'LCLS/PsanaConf': 'Ds2_recons.cfg',
+    #'LCLS/PsanaConf': 'Ds1.cfg',
+    #'LCLS/PsanaConf': 'Ds1_recons.cfg',
 
-    'aduThreshold': 20,
+    'aduThreshold': 15,
     'aduPhoton': 1,
     'hitscoreMinCount':200,
 
@@ -56,16 +59,27 @@ state = {
             'updateRate': 100
             },
         'sample': {
-            'paramXmin': 178.13625-0.05,
-            'paramXmax': 178.13625+0.05,
+            'paramXmin': 199-0.5,
+            'paramXmax': 199+0.5,
             'xlabel': 'position in x [mm]',
-            'paramYmin': -41.12155-0.05,
+            'paramYmin': --0.05,
             'paramYmax': -41.12155+0.05,
             'ylabel': 'position in y [mm]',
             'paramXstep': 0.001,
             'paramYstep': 0.001,
             'updateRate': 100
-            }
+            },
+        'sample_scan': {
+            'xmin': 199-10,
+            'xmax': 199+10,
+            'xlabel': 'position in x [mm]',
+            'ymin': -24.5-10,
+            'ymax': -24.5+10,
+            'ylabel': 'position in y [mm]',
+            'radius':100,
+            'step': 0.001,
+            'updateRate': 100
+            },
         }
     }
 
@@ -85,31 +99,31 @@ def onEvent(evt):
         return
 
     # Detector calibration and other stuff
-    analysis.pixel_detector.plotDetector(cspad)
-
+    #analysis.pixel_detector.plotDetector(cspad)
+    
     # Pulse energies
     #print evt["pulseEnergies"]
     analysis.beamline.plotPulseEnergy(evt["pulseEnergies"])
     pulseEnergy = analysis.beamline.averagePulseEnergies(evt["pulseEnergies"])
-
+    
     # Reshape CSPAD Ds2 detector
     #print evt["calibrated"]["CsPad Ds2 [calibrated]"].data
     cspad_central =  analysis.pixel_detector.reshape_detector(cspad)
-
+    
     #print evt["photonPixelDetectors"]["CsPad Ds2 central"]
     # Counting photons on the small back detector
     #nrPhotons = analysis.pixel_detector.countNrPhotons(cspad.data)
     #analysis.pixel_detector.plotNrPhotons("CsPad2x2 - Nr. of Photons (adup = %d, th = %d)" %(state["aduPhoton"], state["aduThreshold"]), nrPhotons)
     nrPhotons = analysis.pixel_detector.countNrPhotons(cspad_central)
     analysis.pixel_detector.plotNrPhotons("CsPad Ds2 - Nr. of Photons (adup = %d, th = %d)" %(state["aduPhoton"], state["aduThreshold"]), nrPhotons)
-
+    
     # Mean Photon Map for Alignment of Aperture 1
     #print "Aperture 1, position in x: ", evt['parameters']['ap1_x'].data
     #print "Aperture 1, position in y: ", evt['parameters']['ap1_y'].data
     analysis.background.plotMeanPhotonMap('aperture1', state["meanPhotonMap"]["aperture1"], nrPhotons, evt['parameters']['ap1_x'], evt['parameters']['ap1_y'], pulseEnergy)
     analysis.background.plotAperturePos(evt['parameters']['ap1_x'])
     analysis.background.plotAperturePos(evt['parameters']['ap1_y'])
-
+    
     # Mean Photon Map for Alignment of Aperture 3
     #print "Aperture 2, position in x: ", evt['parameters']['ap2_x'].data
     #print "Aperture 2, position in y: ", evt['parameters']['ap2_y'].data
@@ -123,18 +137,20 @@ def onEvent(evt):
     analysis.background.plotMeanPhotonMap('aperture3', state["meanPhotonMap"]["aperture3"], nrPhotons, evt['parameters']['ap3_x'], evt['parameters']['ap3_y'], pulseEnergy)
     analysis.background.plotAperturePos(evt['parameters']['ap3_x'])
     analysis.background.plotAperturePos(evt['parameters']['ap3_y'])
-
+    
     # Mean Photon Map for Movement of fixed target
     print "Fixed target  position in x: ", evt['parameters']['CXI:SC1:MMS:02.RBV'].data
     print "Fixed target  position in y: ", evt['parameters']['CXI:USR:MMS:17.RBV'].data
-    analysis.background.plotMeanPhotonMap('sample', state["meanPhotonMap"]["sample"], nrPhotons, evt['parameters']['CXI:SC1:MMS:02.RBV'], evt['parameters']['CXI:USR:MMS:17.RBV'], pulseEnergy)
-    analysis.background.plotAperturePos(evt['parameters']['CXI:SC1:MMS:02.RBV'])
-    analysis.background.plotAperturePos(evt['parameters']['CXI:USR:MMS:17.RBV'])
+    #analysis.background.plotMeanPhotonMap('sample', state["meanPhotonMap"]["sample"], nrPhotons, evt['parameters']['CXI:SC1:MMS:02.RBV'], evt['parameters']['CXI:USR:MMS:17.RBV'], pulseEnergy)
+    #analysis.background.plotAperturePos(evt['parameters']['CXI:SC1:MMS:02.RBV'])
+    #analysis.background.plotAperturePos(evt['parameters']['CXI:USR:MMS:17.RBV'])
+    analysis.hitfinding.plotMeanPhotonMap('Sample scan -> ', state["meanPhotonMap"]["sample_scan"], nrPhotons, evt['parameters']['CXI:SC1:MMS:02.RBV'], evt['parameters']['CXI:USR:MMS:17.RBV'], pulseEnergy)
     
     # Hitfinding
     #hit, hitscore = analysis.hitfinding.countLitPixels(evt['calibrated']['CsPad Dg3 [calibrated]'].data)
     hit, hitscore = analysis.hitfinding.countLitPixels(cspad_central)
     analysis.hitfinding.plotHitscore(hitscore)
+    #if hit: analysis.pixel_detector.plotDetector(cspad)
 
     # How fast are we processing the data?
     analysis.event.printProcessingRate(evt)
