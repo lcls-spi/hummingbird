@@ -9,8 +9,8 @@ import analysis.pixel_detector
 state = {
     'Facility': 'LCLS',
 
-    'LCLS/DataSource': 'shmem=CXI.0:stop=no',
-    #'LCLS/DataSource': 'exp=cxi86415:run=2:xtc',
+    #'LCLS/DataSource': 'shmem=CXI.0:stop=no',
+    'LCLS/DataSource': 'exp=cxi86415:run=17:xtc',
     #'LCLS/PsanaConf': 'small_back.cfg',
     'LCLS/PsanaConf': 'back.cfg',
     #'LCLS/PsanaConf': 'back_with_geometry.cfg',
@@ -23,36 +23,36 @@ state = {
 
     'meanPhotonMap': {
         'aperture1': {
-            'paramXmin':  8000-1000,
-            'paramXmax':  8000+1000,
+            'paramXmin':  8200-250,
+            'paramXmax':  8200+250,
             'xlabel': 'position in x [mm]',
-            'paramYmin':  -7700-250,
-            'paramYmax':  -7700+250,
+            'paramYmin':  -7600-250,
+            'paramYmax':  -7600+250,
             'ylabel': 'position in y [mm]',
-            'paramXstep': 25,
-            'paramYstep': 25,
+            'paramXstep': 20,
+            'paramYstep': 20,
             'updateRate': 100
             },
         'aperture2': {
-            'paramXmin':  9700-250,
-            'paramXmax':  9700+250,
+            'paramXmin':  3700-250,
+            'paramXmax':  3700+250,
             'xlabel': 'position in x [mm]',
             'paramYmin':  1200-250,
             'paramYmax':  1200+250,
             'ylabel': 'position in y [mm]',
-            'paramXstep': 25,
-            'paramYstep': 25,
+            'paramXstep': 20,
+            'paramYstep': 20,
             'updateRate': 100
             },
         'aperture3': {
-            'paramXmin':   9900-250,
-            'paramXmax':   9900+250,
+            'paramXmin':   3800-250,
+            'paramXmax':   3800+250,
             'xlabel': 'position in x [mm]',
-            'paramYmin':   -300-250,
-            'paramYmax':   -300+250,
+            'paramYmin':   -200-250,
+            'paramYmax':   -200+250,
             'ylabel': 'position in y [mm]',
-            'paramXstep': 25,
-            'paramYstep': 25,
+            'paramXstep': 20,
+            'paramYstep': 20,
             'updateRate': 100
             }
         }
@@ -67,6 +67,7 @@ def onEvent(evt):
     # What detector to use
     try:
         cspad = evt["calibrated"]["CsPad Ds2 [calibrated]"]
+        #cspad = evt['calibrated']['CsPad Dg3 [calibrated]']
         #cspad = evt["reconstructed"]["CsPad Ds2 [reconstructed]"]
     except TypeError:
         print "No detector available"
@@ -86,7 +87,7 @@ def onEvent(evt):
 
     #print evt["photonPixelDetectors"]["CsPad Ds2 central"]
     # Counting photons on the small back detector
-    #nrPhotons = analysis.pixel_detector.countNrPhotons(evt['calibrated']['CsPad Dg3 [calibrated]'].data)
+    #nrPhotons = analysis.pixel_detector.countNrPhotons(cspad.data)
     #analysis.pixel_detector.plotNrPhotons("CsPad2x2 - Nr. of Photons (adup = %d, th = %d)" %(state["aduPhoton"], state["aduThreshold"]), nrPhotons)
     nrPhotons = analysis.pixel_detector.countNrPhotons(cspad_central)
     analysis.pixel_detector.plotNrPhotons("CsPad Ds2 - Nr. of Photons (adup = %d, th = %d)" %(state["aduPhoton"], state["aduThreshold"]), nrPhotons)
@@ -113,7 +114,7 @@ def onEvent(evt):
     analysis.background.plotAperturePos(evt['parameters']['ap3_y'])
 
     # Hitfinding
-    # hit, hitscore = analysis.hitfinding.countLitPixels(evt['calibrated']['CsPad Dg3 [calibrated]'])
+    #hit, hitscore = analysis.hitfinding.countLitPixels(evt['calibrated']['CsPad Dg3 [calibrated]'].data)
     hit, hitscore = analysis.hitfinding.countLitPixels(cspad_central)
     analysis.hitfinding.plotHitscore(hitscore)
 
