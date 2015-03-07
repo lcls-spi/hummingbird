@@ -9,8 +9,8 @@ import analysis.pixel_detector
 state = {
     'Facility': 'LCLS',
 
-    #'LCLS/DataSource': 'shmem=CXI.0:stop=no',
-    'LCLS/DataSource': 'exp=cxi86415:run=17:xtc',
+    'LCLS/DataSource': 'shmem=CXI.0:stop=no',
+    #'LCLS/DataSource': 'exp=cxi86415:run=17:xtc',
     #'LCLS/PsanaConf': 'small_back.cfg',
     'LCLS/PsanaConf': 'back.cfg',
     #'LCLS/PsanaConf': 'back_with_geometry.cfg',
@@ -54,6 +54,17 @@ state = {
             'paramXstep': 20,
             'paramYstep': 20,
             'updateRate': 100
+            },
+        'sample': {
+            'paramXmin': 178.13625-0.05,
+            'paramXmax': 178.13625+0.05,
+            'xlabel': 'position in x [mm]',
+            'paramYmin': -41.12155-0.05,
+            'paramYmax': -41.12155+0.05,
+            'ylabel': 'position in y [mm]',
+            'paramXstep': 0.001,
+            'paramYstep': 0.001,
+            'updateRate': 100
             }
         }
     }
@@ -74,7 +85,7 @@ def onEvent(evt):
         return
 
     # Detector calibration and other stuff
-    #analysis.pixel_detector.plotDetector(cspad)
+    analysis.pixel_detector.plotDetector(cspad)
 
     # Pulse energies
     #print evt["pulseEnergies"]
@@ -113,6 +124,13 @@ def onEvent(evt):
     analysis.background.plotAperturePos(evt['parameters']['ap3_x'])
     analysis.background.plotAperturePos(evt['parameters']['ap3_y'])
 
+    # Mean Photon Map for Movement of fixed target
+    print "Fixed target  position in x: ", evt['parameters']['CXI:SC1:MMS:02.RBV'].data
+    print "Fixed target  position in y: ", evt['parameters']['CXI:USR:MMS:17.RBV'].data
+    analysis.background.plotMeanPhotonMap('sample', state["meanPhotonMap"]["sample"], nrPhotons, evt['parameters']['CXI:SC1:MMS:02.RBV'], evt['parameters']['CXI:USR:MMS:17.RBV'], pulseEnergy)
+    analysis.background.plotAperturePos(evt['parameters']['CXI:SC1:MMS:02.RBV'])
+    analysis.background.plotAperturePos(evt['parameters']['CXI:USR:MMS:17.RBV'])
+    
     # Hitfinding
     #hit, hitscore = analysis.hitfinding.countLitPixels(evt['calibrated']['CsPad Dg3 [calibrated]'].data)
     hit, hitscore = analysis.hitfinding.countLitPixels(cspad_central)
