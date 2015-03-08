@@ -86,7 +86,7 @@ state = {
             'radius':40,
             'step': 0.002,
             'gridstep': 0.5, 
-            'updateRate': 100
+            'updateRate': 50
             },
         }
     }
