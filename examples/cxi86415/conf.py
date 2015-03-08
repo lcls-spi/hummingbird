@@ -1,4 +1,5 @@
 
+import ipc
 import time
 import analysis.event
 import analysis.beamline
@@ -9,6 +10,7 @@ import analysis.pixel_detector
 state = {
     'Facility': 'LCLS',
 
+    #'LCLS/DataSource': 'shmem=4_3_psana_CXI.0:stop=no',
     'LCLS/DataSource': 'shmem=CXI.0:stop=no',
     #'LCLS/DataSource': 'exp=cxi86415:run=17:xtc',
     #'LCLS/PsanaConf': 'Dg3.cfg',
@@ -70,8 +72,8 @@ state = {
             'updateRate': 100
             },
         'sample_scan': {
-            'xmin': 162-10,
-            'xmax': 162+10,
+            'xmin': 162-30,
+            'xmax': 162+30,
             'xlabel': 'position in x [mm]',
             'ymin': -38-10,
             'ymax': -38+10,
@@ -82,6 +84,9 @@ state = {
             },
         }
     }
+
+#if ipc.mpi.rank > 5:
+#    state['LCLS/DataSource'] = 'shmem=0_42_psana_CXI.0:stop=no'
 
 def onEvent(evt):
     #print "Native keys: ", evt.nativeKeys()
