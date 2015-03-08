@@ -72,14 +72,15 @@ state = {
             'updateRate': 100
             },
         'sample_scan': {
-            'xmin': 162-30,
-            'xmax': 162+30,
+            'xmin': 200-30,
+            'xmax': 200+30,
             'xlabel': 'position in x [mm]',
-            'ymin': -38-10,
-            'ymax': -38+10,
+            'ymin': -24-10,
+            'ymax': -24+10,
             'ylabel': 'position in y [mm]',
             'radius':40,
             'step': 0.001,
+            'gridstep': 0.5, 
             'updateRate': 100
             },
         }
