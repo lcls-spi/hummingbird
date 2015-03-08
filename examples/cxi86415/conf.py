@@ -131,21 +131,21 @@ def onEvent(evt):
     # Mean Photon Map for Alignment of Aperture 1
     #print "Aperture 1, position in x: ", evt['parameters']['ap1_x'].data
     #print "Aperture 1, position in y: ", evt['parameters']['ap1_y'].data
-    #analysis.background.plotMeanPhotonMap('aperture1', state["meanPhotonMap"]["aperture1"], nrPhotons, evt['parameters']['ap1_x'], evt['parameters']['ap1_y'], pulseEnergy)
+    #plot.maps.plotMeanMap('aperture1', state["meanPhotonMap"]["aperture1"], evt['parameters']['ap1_x'], evt['parameters']['ap1_y'], nrPhotons, pulseEnergy)
     #analysis.background.plotAperturePos(evt['parameters']['ap1_x'])
     #analysis.background.plotAperturePos(evt['parameters']['ap1_y'])
     
     # Mean Photon Map for Alignment of Aperture 3
     #print "Aperture 2, position in x: ", evt['parameters']['ap2_x'].data
     #print "Aperture 2, position in y: ", evt['parameters']['ap2_y'].data
-    #analysis.background.plotMeanPhotonMap('aperture2', state["meanPhotonMap"]["aperture2"], nrPhotons, evt['parameters']['ap2_x'], evt['parameters']['ap2_y'], pulseEnergy)
+    #plot.maps.plotMeanMap('aperture2', state["meanPhotonMap"]["aperture2"], evt['parameters']['ap2_x'], evt['parameters']['ap2_y'], nrPhotons, pulseEnergy)
     #analysis.background.plotAperturePos(evt['parameters']['ap2_x'])
     #analysis.background.plotAperturePos(evt['parameters']['ap2_y'])
     
     # Mean Photon Map for Alignment of Aperture 3
     #print "Aperture 3, position in x: ", evt['parameters']['ap3_x'].data
     #print "Aperture 3, position in y: ", evt['parameters']['ap3_y'].data
-    #analysis.background.plotMeanPhotonMap('aperture3', state["meanPhotonMap"]["aperture3"], nrPhotons, evt['parameters']['ap3_x'], evt['parameters']['ap3_y'], pulseEnergy)
+    #plot.maps..plotMeanMap('aperture3', state["meanPhotonMap"]["aperture3"], nrPhotons, evt['parameters']['ap3_x'], evt['parameters']['ap3_y'], pulseEnergy)
     #analysis.background.plotAperturePos(evt['parameters']['ap3_x'])
     #analysis.background.plotAperturePos(evt['parameters']['ap3_y'])
     
@@ -153,9 +153,9 @@ def onEvent(evt):
     print "Fixed target  position in x: ", evt['parameters']['CXI:SC1:MMS:02.RBV'].data
     print "Fixed target  position in y: ", evt['parameters']['CXI:USR:MMS:17.RBV'].data
     #analysis.background.plotMeanPhotonMap('sample', state["meanPhotonMap"]["sample"], nrPhotons, evt['parameters']['CXI:SC1:MMS:02.RBV'], evt['parameters']['CXI:USR:MMS:17.RBV'], pulseEnergy)
-    #analysis.background.plotAperturePos(evt['parameters']['CXI:SC1:MMS:02.RBV'])
-    #analysis.background.plotAperturePos(evt['parameters']['CXI:USR:MMS:17.RBV'])
-    plot.maps.plotMeanMap('Sample scan -> ', state["meanPhotonMap"]["sample_scan"], evt['parameters']['CXI:SC1:MMS:02.RBV'], evt['parameters']['CXI:USR:MMS:17.RBV'], nrPhotons, pulseEnergy)
+    analysis.background.plotAperturePos(evt['parameters']['CXI:SC1:MMS:02.RBV'])
+    analysis.background.plotAperturePos(evt['parameters']['CXI:USR:MMS:17.RBV'])
+    plot.maps.plotMeanMap('Sample scan -> ', state["meanPhotonMap"]["sample_scan"], evt['parameters']['CXI:SC1:MMS:02.RBV'], evt['parameters']['CXI:USR:MMS:17.RBV'], nrPhotons, pulseEnergy, msg="Current motor position:\n X = %.3f\n Y = %.3f" %(evt['parameters']['CXI:SC1:MMS:02.RBV'].data, evt['parameters']['CXI:USR:MMS:17.RBV'].data))
     
     # Hitfinding
     #hit, hitscore = analysis.hitfinding.countLitPixels(evt['calibrated']['CsPad Dg3 [calibrated]'].data)
