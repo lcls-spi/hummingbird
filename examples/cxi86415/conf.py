@@ -28,6 +28,12 @@ state = {
 
     'detectorUpdateRate':100,
 
+    'histogram': {
+        'hmin': -30,
+        'hmax': 70,
+        'nbins': 100
+        },
+
     'meanPhotonMap': {
         'aperture1': {
             'xmin':  8000-2000,
@@ -120,6 +126,10 @@ def onEvent(evt):
     # Reshape CSPAD Ds2 detector
     #print evt["calibrated"]["CsPad Ds2 [calibrated]"].data
     cspad_central =  analysis.pixel_detector.reshape_detector(cspad)
+
+
+    # Plot Histogram of detector
+    analysis.pixel_detector.plotHistogram('CsPad Ds2 - histogram', cspad_central, state["histogram"])
     
     #print evt["photonPixelDetectors"]["CsPad Ds2 central"]
     # Counting photons on the small back detector
