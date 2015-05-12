@@ -173,4 +173,4 @@ def onEvent(evt):
 
     # How fast are we processing the data?
     # ------------------------------------
-    analysis.event.printProcessingRate(evt)
+    analysis.event.printProcessingRate()
