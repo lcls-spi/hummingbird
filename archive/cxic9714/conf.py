@@ -1,23 +1,29 @@
 import os
 import time
 import utils.reader
-import simulation.simple
+import utils.array
+import simulation.cxi
 import analysis.event
 import analysis.pixel_detector
 import analysis.hitfinding
 import analysis.sizing
 import plotting.line
 import plotting.image
-from backend import ureg
+import plotting.correlation
 
-sim = simulation.simple.Simulation("examples/sizing/virus.conf")
-sim.hitrate = 0.1
+key_to_data = "entry_1/image_1/data"
+key_to_pulse_energy = "LCLS/f_11_ENRC"
+key_to_injection = "entry_1/sample_1/geometry_1/translation"
+sim = simulation.cxi.Simulation(os.environ["CXIDATA"],
+                                key_to_data, 
+                                key_to_pulse_energy,
+                                key_to_injection)
 
 state = {
     'Facility': 'Dummy',
 
     'Dummy': {
-        'Repetition Rate' : 1,
+        'Repetition Rate' : 120,
         'Simulation': sim,
         'Data Sources': {
             'CCD': {
@@ -30,26 +36,17 @@ state = {
                 'unit': 'J',
                 'type': 'pulseEnergies'
             },
-            'diameter': {
-                'data': sim.get_particle_diameter_nm,
-                'unit': 'nm',
+            'injector_posx': {
+                'data': sim.get_injector_pos_x,
+                'unit': 'um',
                 'type': 'parameters'
             },
-            'intensity': {
-                'data': sim.get_intensity_mJ_um2,
-                'unit': "mJ/um**2",
+            'injector_posz': {
+                'data': sim.get_injector_pos_z,
+                'unit': 'um',
                 'type': 'parameters'
-            },
-           'offCenterX': {
-               'data': sim.get_offCenterX,
-               'unit': '',
-               'type': 'parameters'
-            },
-           'offCenterY': {
-               'data': sim.get_offCenterY,
-               'unit': '',
-               'type': 'parameters'
-           }
+            }
+
         }        
     }
 }
@@ -64,13 +61,30 @@ histogramCCD = {
     'label': "Nr of photons",
     'history': 50}
 
+heatmapInjector = {
+    'xmin': 0,
+    'xmax': 10,
+
+    'xbins': 20,
+    'ymin': 20,
+    'ymax': 120,
+    'ybins': 50}
+
+heatmapCenterPos = {
+    'xmin': -30,
+    'xmax':  10,
+    'xbins': 20,
+    'ymin': -25,
+    'ymax': 15,
+    'ybins': 20}
+
 # Model parameters for sphere
 # ---------------------------
 modelParams = {
-    'wavelength':0.12398,
+    'wavelength':0.1907,
     'pixelsize':110,
-    'distance':2160,
-    'adu_per_photon':1,
+    'distance':2400,
+    'adu_per_photon':26,
     'quantum_efficiency':1.,
     'material':'virus'}
 
@@ -79,14 +93,16 @@ modelParams = {
 sizingParams = {
     'd0':100,
     'i0':1,
-    'mask_radius':100,
+    'mask_radius':300,
     'downsampling':1,
-    'brute_evals':10,
+    'brute_evals':40,
     'photon_counting':True}
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
-mask = utils.reader.MaskReader(this_dir + "/mask.h5","/data/data").boolean_mask
-    
+greader = utils.reader.GeometryReader(this_dir + "/geometry.h5")
+mreader = utils.reader.MaskReader(this_dir + "/mask.h5","/data/data")
+mask    = utils.array.assembleImage(greader.x, greader.y, mreader.boolean_mask, nx=414, ny=414, dtype='bool')
+
 def onEvent(evt):
 
     # Processing rate
@@ -100,16 +116,22 @@ def onEvent(evt):
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - CCD"], label='Nr of photons / frame', history=50)
 
     # Simple hitfinding (Count Nr. of lit pixels)
-    analysis.hitfinding.countLitPixels(evt, "photonPixelDetectors", "CCD", aduThreshold=0.5, hitscoreThreshold=10)
+    analysis.hitfinding.countLitPixels(evt, "photonPixelDetectors", "CCD", aduThreshold=25, hitscoreThreshold=1000, mask=mask)
 
     # Compute the hitrate
-    analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - CCD"], history=500)
+    analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - CCD"], history=10000)
     
     # Plot the hitscore
     plotting.line.plotHistory(evt["analysis"]["hitscore - CCD"], label='Nr. of lit pixels')
 
     # Plot the hitrate
     plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
+
+    # Plot injector position in x
+    plotting.line.plotHistory(evt["parameters"]["injector_posx"], label='Position in X [um]')
+
+    # Plot injector position in y
+    plotting.line.plotHistory(evt["parameters"]["injector_posz"], label='Position in Z [um]')
     
     # Perform sizing on hits
     if evt["analysis"]["isHit - CCD"]:
@@ -118,7 +140,7 @@ def onEvent(evt):
 
         t0 = time.time()
         # Find the center of diffraction
-        analysis.sizing.findCenter(evt, "photonPixelDetectors", "CCD", mask=mask, maxshift=20, threshold=0.5, blur=4)
+        analysis.sizing.findCenter(evt, "photonPixelDetectors", "CCD", mask=mask, maxshift=40, threshold=13, blur=4)
         t_center = time.time()-t0
         
         # Fitting sphere model to get size and intensity
@@ -140,18 +162,11 @@ def onEvent(evt):
         plotting.line.plotHistory(evt["analysis"]["intensity"])
         plotting.line.plotHistory(evt["analysis"]["error"])
 
-        plotting.line.plotHistory(evt["parameters"]["offCenterX"])
-        plotting.line.plotHistory(evt["parameters"]["offCenterY"])
-        plotting.line.plotHistory(evt["parameters"]["diameter"])
-        plotting.line.plotHistory(evt["parameters"]["intensity"])
-
         # Attach a message to the plots
         s0 = evt["analysis"]["diameter"].data
-        s1 = evt["parameters"]["diameter"].data
         I0 = evt["analysis"]["intensity"].data
-        I1 = evt["parameters"]["intensity"].data
         msg_glo = "diameter = %.2f nm, \nintensity = %.2f mJ/um2" % (s0, I0)
-        msg_fit = "Fit result: \ndiameter = %.2f nm (%.2f nm), \nintensity = %.2f mJ/um2 (%.2f mJ/um2)" % (s0, s1-s0, I0, I1-I0)
+        msg_fit = "Fit result: \ndiameter = %.2f nm, \nintensity = %.2f mJ/um2" % (s0, I0)
 
         # Plot the glorious shots
         plotting.image.plotImage(evt["photonPixelDetectors"]["CCD"], msg=msg_glo, log=True, mask=mask)
@@ -159,3 +174,8 @@ def onEvent(evt):
         # Plot the fitted model
         plotting.image.plotImage(evt["analysis"]["fit"], msg=msg_fit, log=True, mask=mask)
         
+        # Plot heatmap of injector pos in x vs. diameter
+        plotting.correlation.plotHeatmap(evt["parameters"]["injector_posx"], evt["analysis"]["diameter"], **heatmapInjector)
+
+        # Plot heatmap of center positions
+        plotting.correlation.plotHeatmap(evt["analysis"]["offCenterX"], evt["analysis"]["offCenterY"], **heatmapCenterPos)
