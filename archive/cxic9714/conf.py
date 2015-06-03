@@ -9,12 +9,15 @@ import analysis.hitfinding
 import analysis.sizing
 import plotting.line
 import plotting.image
+import plotting.correlation
 
 key_to_data = "entry_1/image_1/data"
 key_to_pulse_energy = "LCLS/f_11_ENRC"
+key_to_injection = "entry_1/sample_1/geometry_1/translation"
 sim = simulation.cxi.Simulation(os.environ["CXIDATA"],
-                                 key_to_data, 
-                                 key_to_pulse_energy)
+                                key_to_data, 
+                                key_to_pulse_energy,
+                                key_to_injection)
 
 state = {
     'Facility': 'Dummy',
@@ -32,7 +35,18 @@ state = {
                 'data': sim.get_pulse_energy,
                 'unit': 'J',
                 'type': 'pulseEnergies'
+            },
+            'injector_posx': {
+                'data': sim.get_injector_pos_x,
+                'unit': 'um',
+                'type': 'parameters'
+            },
+            'injector_posz': {
+                'data': sim.get_injector_pos_z,
+                'unit': 'um',
+                'type': 'parameters'
             }
+
         }        
     }
 }
@@ -47,13 +61,30 @@ histogramCCD = {
     'label': "Nr of photons",
     'history': 50}
 
+heatmapInjector = {
+    'xmin': 0,
+    'xmax': 10,
+
+    'xbins': 20,
+    'ymin': 20,
+    'ymax': 120,
+    'ybins': 50}
+
+heatmapCenterPos = {
+    'xmin': -30,
+    'xmax':  10,
+    'xbins': 20,
+    'ymin': -25,
+    'ymax': 15,
+    'ybins': 20}
+
 # Model parameters for sphere
 # ---------------------------
 modelParams = {
-    'wavelength':0.12398,
+    'wavelength':0.1907,
     'pixelsize':110,
-    'distance':2160,
-    'adu_per_photon':1,
+    'distance':2400,
+    'adu_per_photon':26,
     'quantum_efficiency':1.,
     'material':'virus'}
 
@@ -62,9 +93,9 @@ modelParams = {
 sizingParams = {
     'd0':100,
     'i0':1,
-    'mask_radius':100,
+    'mask_radius':300,
     'downsampling':1,
-    'brute_evals':10,
+    'brute_evals':40,
     'photon_counting':True}
 
 this_dir = os.path.dirname(os.path.realpath(__file__))
@@ -88,22 +119,28 @@ def onEvent(evt):
     analysis.hitfinding.countLitPixels(evt, "photonPixelDetectors", "CCD", aduThreshold=25, hitscoreThreshold=1000, mask=mask)
 
     # Compute the hitrate
-    analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - CCD"], history=100)
+    analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - CCD"], history=10000)
     
     # Plot the hitscore
     plotting.line.plotHistory(evt["analysis"]["hitscore - CCD"], label='Nr. of lit pixels')
 
     # Plot the hitrate
     plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
+
+    # Plot injector position in x
+    plotting.line.plotHistory(evt["parameters"]["injector_posx"], label='Position in X [um]')
+
+    # Plot injector position in y
+    plotting.line.plotHistory(evt["parameters"]["injector_posz"], label='Position in Z [um]')
     
     # Perform sizing on hits
-    if evt["analysis"]["isHit - CCD"].data:
+    if evt["analysis"]["isHit - CCD"]:
 
         print "It's a hit"
 
         t0 = time.time()
         # Find the center of diffraction
-        analysis.sizing.findCenter(evt, "photonPixelDetectors", "CCD", mask=mask, maxshift=20, threshold=0.5, blur=4)
+        analysis.sizing.findCenter(evt, "photonPixelDetectors", "CCD", mask=mask, maxshift=40, threshold=13, blur=4)
         t_center = time.time()-t0
         
         # Fitting sphere model to get size and intensity
@@ -137,3 +174,8 @@ def onEvent(evt):
         # Plot the fitted model
         plotting.image.plotImage(evt["analysis"]["fit"], msg=msg_fit, log=True, mask=mask)
         
+        # Plot heatmap of injector pos in x vs. diameter
+        plotting.correlation.plotHeatmap(evt["parameters"]["injector_posx"], evt["analysis"]["diameter"], **heatmapInjector)
+
+        # Plot heatmap of center positions
+        plotting.correlation.plotHeatmap(evt["analysis"]["offCenterX"], evt["analysis"]["offCenterY"], **heatmapCenterPos)
