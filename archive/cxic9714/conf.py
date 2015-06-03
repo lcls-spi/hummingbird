@@ -173,7 +173,13 @@ def onEvent(evt):
         
         # Plot the fitted model
         plotting.image.plotImage(evt["analysis"]["fit"], msg=msg_fit, log=True, mask=mask)
-        
+
+        # Bin image
+        analysis.pixel_detector.bin(evt, "photonPixelDetectors", "CCD")
+
+        # Plot binned image
+        plotting.image.plotImage(evt["analysis"]["CCD - binned"], log=True)
+                
         # Plot heatmap of injector pos in x vs. diameter
         plotting.correlation.plotHeatmap(evt["parameters"]["injector_posx"], evt["analysis"]["diameter"], **heatmapInjector)
 
