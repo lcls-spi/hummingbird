@@ -206,7 +206,7 @@ def onEvent(evt):
             # 1D arrays have to have same length, otherwise histoty keeping gets messed up
             rlen = 100
             ipc.new_data("radial fit", numpy.array([evt["analysis"]["radial distance - fit"].data.ravel()[:rlen], evt["analysis"]["radial average - fit"].data.ravel()[:rlen]], copy=False))
-            ipc.new_data("radial CCD", numpy.array([evt["analysis"]["radial distance - CCD"].data.ravel()[:rlen], evt["analysis"]["radial average - CCD"].data.ravel()[:rlen]], copy=False))
+            ipc.new_data("radial CCD", numpy.array([evt["analysis"]["radial distance - CCD"].data.ravel()[:rlen], evt["analysis"]["radial average - CCD"].data.ravel()[:rlen]], copy=False), msg="BLA")
             
         t_all = t_center + t_size
         print "Time: %e sec (center / size : %.2f%% / %.2f%%)" % (t_all, 100.*t_center/t_all, 100.*t_size/t_all)
@@ -214,18 +214,24 @@ def onEvent(evt):
         # Error parameter
         diff = (evt[ccd_type][ccd_key].data-evt["analysis"]["fit"].data)[m].sum()/float(evt[ccd_type][ccd_key].data[m].sum())
         ipc.new_data("fit diff", diff)
+        ipc.new_data("fit error", evt["analysis"]["fit error"].data)
+        ipc.new_data("fit mean error 1", evt["analysis"]["fit mean error 1"].data)
+        ipc.new_data("fit mean error 3", evt["analysis"]["fit mean error 3"].data)
         
         plotting.line.plotHistory(evt["analysis"]["offCenterX"])
         plotting.line.plotHistory(evt["analysis"]["offCenterY"])
         plotting.line.plotHistory(evt["analysis"]["diameter"])
         plotting.line.plotHistory(evt["analysis"]["intensity"])
-        plotting.line.plotHistory(evt["analysis"]["error"])
+        #plotting.line.plotHistory(evt["analysis"]["error"])
 
         # Attach a message to the plots
         s0 = evt["analysis"]["diameter"].data
         I0 = evt["analysis"]["intensity"].data
         msg_glo = "diameter = %.2f nm, \nintensity = %.2f mJ/um2" % (s0, I0)
-        msg_fit = "Fit result: \ndiameter = %.2f nm, \nintensity = %.2f mJ/um2, diff=%f" % (s0, I0, diff)
+        msg_fit = "Fit result: \ndiameter = %.2f nm, \nintensity = %.2f mJ/um2 \nerr=%f, merr1=%f, merr3=%f" % (s0, I0,
+                                                                                                                evt["analysis"]["fit error"].data,
+                                                                                                                evt["analysis"]["fit mean error 1"].data/evt["analysis"]["radial average - CCD"].data.sum(),
+                                                                                                                evt["analysis"]["fit mean error 3"].data)
 
         # Plot the glorious shots
         plotting.image.plotImage(evt[ccd_type][ccd_key], msg=msg_glo, log=True, mask=m)
