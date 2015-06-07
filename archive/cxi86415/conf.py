@@ -14,8 +14,8 @@ state = {
     'Facility': 'LCLS',
 
     #'LCLS/DataSource': 'shmem=4_3_psana_CXI.0:stop=no',
-    'LCLS/DataSource': 'shmem=CXI.0:stop=no',
-    #'LCLS/DataSource': 'exp=cxi86415:run=17:xtc',
+    #'LCLS/DataSource': 'shmem=CXI.0:stop=no',
+    'LCLS/DataSource': 'exp=cxi86415:run=17:xtc',
 
     #'LCLS/PsanaConf': 'Dg3.cfg',
     #'LCLS/PsanaConf': 'Dg3_recons.cfg',
@@ -24,13 +24,15 @@ state = {
     #'LCLS/PsanaConf': 'Ds1.cfg',
     #'LCLS/PsanaConf': 'Ds1_recons.cfg',
 
-    'aduThreshold': 20,
-    'aduPhoton': 1,
-    'hitscoreMinCount':200,
-
-    'detectorUpdateRate':100,
-
     }
+
+
+# Parameters
+# ----------
+aduThreshold = 20
+aduPhoton    = 1
+hitscoreMinCount = 200
+detectorUpdateRate = 100
 
 # Configuration of plots
 # ----------------------
@@ -83,9 +85,6 @@ meanIntensitySample = {
     'xlabel': 'position in x [mm]',
     'ylabel': 'position in y [mm]'}
     
-#if ipc.mpi.rank > 5:
-#    state['LCLS/DataSource'] = 'shmem=0_42_psana_CXI.0:stop=no'
-
 def onEvent(evt):
     #print "Native keys: ",      evt.nativeKeys()
     #print "Hummingbird keys: ", evt.keys()
