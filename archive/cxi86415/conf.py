@@ -45,7 +45,7 @@ histogram = {
 
 meanIntensityAperture1 = {
     'xmin':  2000,
-    'xmax':  8000,
+    'xmax':  10000,
     'ymin':  -10000,
     'ymax':  -2000,
     'step':  10,
