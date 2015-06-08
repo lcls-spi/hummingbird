@@ -12,7 +12,8 @@ state = {
     #'LCLS/PsanaConf': 'Dg3.cfg',
 }
 
-BG = analysis.background.Stack(name="bg",maxLen=100)
+BG = analysis.background.Stack(name="bg",maxLen=1000)
+
 def onEvent(evt):
     cspad = evt["calibrated"]["CsPad Ds2[calibrated]"]
     analysis.beamline.printPulseEnergy(evt['pulseEnergies'])
@@ -20,9 +21,8 @@ def onEvent(evt):
     print "EPICS photon energy = %g eV" %(evt['parameters']['SIOC:SYS0:ML00:AO541'].data)
     analysis.pixel_detector.printStatistics(evt['photonPixelDetectors'])
     analysis.pixel_detector.printStatistics(evt['ionTOFs'])
-    #print "Rank = ", ipc.mpi.rank, analysis.event.printID(evt['eventID'])
     analysis.event.printProcessingRate()
-    #print evt["photonPixelDetectors"]["CsPad2x2"].data.shape
+    # Update background buffer
     BG.add(cspad.data[0,:,:])
-    print BG._currentIndex
-    BG.write(evt,directory=".",png=True,interval=10)
+    # Write background to file
+    BG.write(evt,directory=".",interval=100)
