@@ -12,7 +12,7 @@ state = {
     #'LCLS/PsanaConf': 'Dg3.cfg',
 }
 
-BG = analysis.background.Stack(name="bg",maxLen=1000)
+BG = analysis.background.Stack(name="bg",maxLen=10000)
 
 def onEvent(evt):
     cspad = evt["calibrated"]["CsPad Ds2[calibrated]"]
@@ -25,4 +25,4 @@ def onEvent(evt):
     # Update background buffer
     BG.add(cspad.data[0,:,:])
     # Write background to file
-    BG.write(evt,directory=".",interval=100)
+    BG.write(evt,directory="./bg",interval=10000)
