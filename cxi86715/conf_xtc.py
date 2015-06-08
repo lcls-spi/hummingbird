@@ -4,6 +4,7 @@ import analysis.pixel_detector
 import analysis.background
 import ipc   
 
+
 state = {
     'Facility': 'LCLS',
     'LCLS/DataSource': 'exp=cxi86715:run=1',
@@ -23,4 +24,5 @@ def onEvent(evt):
     analysis.event.printProcessingRate()
     #print evt["photonPixelDetectors"]["CsPad2x2"].data.shape
     BG.add(cspad.data[0,:,:])
-    BG.write(evt,directory=".",png=True,interval=100)
+    print BG._currentIndex
+    BG.write(evt,directory=".",png=True,interval=10)
