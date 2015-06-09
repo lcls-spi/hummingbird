@@ -130,9 +130,9 @@ def onEvent(evt):
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key]
     ### FOR TESTING
-    hit_dummy = numpy.random.randint(2)
+    hit_bool = numpy.random.randint(2)
     
-    if not hit_dummy:
+    if not hit_bool:
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
@@ -163,7 +163,7 @@ def onEvent(evt):
     # SEND RESULT TO INTERFACE #
     # ------------------------ #
 
-    if not hit:
+    if not hit_bool:
         
         pass
     
