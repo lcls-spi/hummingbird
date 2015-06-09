@@ -18,8 +18,7 @@ state = {
     #'LCLS/DataSource': 'shmem=4_3_psana_CXI.0:stop=no',
     #'LCLS/DataSource': 'shmem=CXI.0:stop=no',
     'LCLS/DataSource': 'exp=cxi86415:run=19:xtc',
-
-    #'LCLS/PsanaConf': 'Dg3.cfg',
+    'LCLS/PsanaConf': 'Dg2.cfg',
     #'LCLS/PsanaConf': 'Dg3_recons.cfg',
     'LCLS/PsanaConf': 'Ds2.cfg',
     #'LCLS/PsanaConf': 'Ds2_recons.cfg',

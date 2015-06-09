@@ -29,7 +29,7 @@ do_sizing      = True
 
 state = {
     'Facility':        'LCLS',
-    'LCLS/PsanaConf':  'psana_cfg/Dg2.cfg',
+    'LCLS/PsanaConf':  'psana_cfg/psana.cfg',
 }
 
 if do_testing:
@@ -42,6 +42,11 @@ else:
 
 c2x2_type = "image"
 c2x2_key  = "CsPad Dg3[image]"
+
+# CSPAD large
+
+clarge_type = "calibrated"
+clarge_key = "CsPad Ds2[calibrated]"
 
 # ---------------------------------------------------------
 # P A R A M E T E R S
@@ -86,7 +91,7 @@ mask_c2x2 = M_back.boolean_mask
 # Background
 # ----------
 
-Nbg = 10
+Nbg = 1000
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
 bg_dir = this_dir + "/stack"
 
@@ -130,6 +135,13 @@ def onEvent(evt):
     # Simple hit finding by counting lit pixels
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key]
+
+    # COUNT PHOTONS
+    # Count photons in different detector regions
+    analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=1, aduThreshold=0.5)
+    analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
+    analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
+    
     ### FOR TESTING
     hit_bool = numpy.random.randint(2)
     
