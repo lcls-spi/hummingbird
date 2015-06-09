@@ -23,3 +23,4 @@ state = {
 def onEvent(evt):
     analysis.event.printProcessingRate()
     back = evt["image"]["CsPad Dg3[image]"].data
+
