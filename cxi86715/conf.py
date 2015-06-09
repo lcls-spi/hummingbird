@@ -21,7 +21,9 @@ import diagnostics
 
 do_testing     = True
 do_diagnostics = False
-do_sizing      = True
+do_sizing      = False
+do_online      = False
+do_autoonline  = True
 
 # ---------------------------------------------------------
 # P S A N A
@@ -37,10 +39,19 @@ state = {
     'LCLS/PsanaConf':  ('psana_%s.cfg' % experiment),
 }
 
+if do_autoonline:
+    import getpass
+    if getpass.getuser() == "cxiopr":
+        do_online = True
+        do_testing = False
+
 if do_testing:
     state['LCLS/DataSource'] = ('exp=%s:run=11:xtc' % experiment)
 else:
     state['LCLS/DataSource'] = ('exp=%s:run=' % experiment)
+
+if do_online:
+    state['LCLS/DataSource'] = 'shmem=psana.0'
 
 # CSPAD 2x2
 # ---------
@@ -264,7 +275,8 @@ def onEvent(evt):
         # Plot the glorious shots
         # image
         #plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2)
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, mask=mask_c2x2)
+        print "BLA"
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, mask=mask_c2x2)#, name="Image")
         plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], hmin=-49, hmax=50, bins=100, label='', density=False, history=100)
  
         plotting.image.plotImage(evt[clarge_type][clarge_key])
