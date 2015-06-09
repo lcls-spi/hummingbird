@@ -22,6 +22,8 @@ import diagnostics
 do_testing     = True
 do_diagnostics = False
 do_sizing      = False
+do_online      = False
+do_autoonline  = True
 
 # ---------------------------------------------------------
 # P S A N A
@@ -32,10 +34,18 @@ state = {
     'LCLS/PsanaConf':  'psana_cfg/psana.cfg',
 }
 
+if do_autoonline:
+    import getpass
+    if getpass.getuser() == "cxiopr":
+        do_online = True
+
 if do_testing:
     state['LCLS/DataSource'] = 'exp=cxi86415:run=1:xtc'
 else:
     state['LCLS/DataSource'] = 'exp=cxi86715:run='
+
+if do_online:
+    state['LCLS/DataSource'] = 'shmem=psana.0'
 
 # CSPAD 2x2
 # ---------
