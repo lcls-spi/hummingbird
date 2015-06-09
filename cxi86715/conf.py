@@ -21,43 +21,63 @@ import diagnostics
 
 do_testing     = True
 do_diagnostics = False
-do_sizing      = False
+do_sizing      = True
 
 # ---------------------------------------------------------
 # P S A N A
 # ---------------------------------------------------------
 
+# NOW
+experiment = "cxi86715"
+# OLD
+#experiment = "cxi86415"
+
 state = {
     'Facility':        'LCLS',
-    'LCLS/PsanaConf':  'psana_cfg/psana.cfg',
+    'LCLS/PsanaConf':  ('psana_%s.cfg' % experiment),
 }
 
 if do_testing:
-    state['LCLS/DataSource'] = 'exp=cxi86415:run=1:xtc'
+    state['LCLS/DataSource'] = ('exp=%s:run=11:xtc' % experiment)
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run='
+    state['LCLS/DataSource'] = ('exp=%s:run=' % experiment)
 
 # CSPAD 2x2
 # ---------
 
+c2x2_ids = {
+    'cxi86415': 'Dg3',
+    'cxi86715': 'Dg2',
+}
+c2x2_id = c2x2_ids[experiment]
+
 c2x2_type = "image"
-c2x2_key  = "CsPad Dg3[image]"
+c2x2_key  = "CsPad %s[image]" % c2x2_id
 
 # CSPAD large
 
-clarge_type = "calibrated"
-clarge_key = "CsPad Ds2[calibrated]"
+clarge_ids = {
+    'cxi86415': 'Ds2',
+    'cxi86715': 'Ds2',
+}
+clarge_id = clarge_ids[experiment]
+
+clarge_type = "photons"
+clarge_key  = "CsPad %s[photons]" % clarge_id
+#clarge_type = "calibrated"
+#clarge_key  = "CsPad %s[calibrated]" % clarge_id
 
 # ---------------------------------------------------------
 # P A R A M E T E R S
 # ---------------------------------------------------------
 
-
 # Hit finding
 # -----------
 
+#aduThreshold      = 20
 aduThreshold      = 10
-hitscoreThreshold = 200
+hitscoreThreshold = 1
+#hitscoreThreshold = 200
 
 # Sizing
 # ------
@@ -143,13 +163,14 @@ def onEvent(evt):
     analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
         
     if not hit:
+        print "MISS (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
         bg.write(evt,directory=bg_dir,interval=Nbg)
     else:
-        print "HIT"
+        print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         if do_sizing:
             # RADIAL SPHERE FIT
             # Find the center of diffraction
@@ -175,9 +196,11 @@ def onEvent(evt):
 
     # HITFINDING
     # Keep hit history for hitrate plots
-    #plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key], runningHistogram=True)
+    ### DOES NOT WORK LIKE THIS!!!
+    plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key])
     # Keep hitscore history
-    plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key], runningHistogram=True)
+    plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key])
+    #plotting.line.plotHistogram(evt["analysis"]["hitscore - " + c2x2_key], hmin=900, hmax=1100, bins=100, label='', density=False, history=100)
 
     if not hit:
         
@@ -216,7 +239,7 @@ def onEvent(evt):
                 # Plot parameter histories
                 plotting.line.plotHistory(evt["analysis"]["offCenterX"])
                 plotting.line.plotHistory(evt["analysis"]["offCenterY"])
-                plotting.line.plotHistory(evt["analysis"]["diameter"])
+                plotting.line.plotHistory(evt["analysis"]["diameter"], runningHistogram=True)
                 plotting.line.plotHistory(evt["analysis"]["intensity"])
 
                 ### NEED CONF ->
@@ -240,12 +263,15 @@ def onEvent(evt):
         
         # Plot the glorious shots
         # image
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2)
-  
+        #plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2)
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, mask=mask_c2x2)
+        plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], hmin=-49, hmax=50, bins=100, label='', density=False, history=100)
+ 
+        plotting.image.plotImage(evt[clarge_type][clarge_key])
 
-    # ------------------- #
-    # INITIAL DIAGNOSTICS #
-    # ------------------- #
+    # ----------------- #
+    # FINAL DIAGNOSTICS #
+    # ----------------- #
     
     # Spit out a lot for debugging
     if do_diagnostics: diagnostics.final_diagnostics(evt)
