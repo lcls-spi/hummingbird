@@ -20,12 +20,12 @@ import diagnostics
 # -----
 
 do_testing     = True
-do_diagnostics = True
+do_diagnostics = False
 do_sizing      = True
 
-# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------
 # P S A N A
-# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------
 
 state = {
     'Facility':        'LCLS',
@@ -43,9 +43,10 @@ else:
 c2x2_type = "image"
 c2x2_key  = "CsPad Dg3[image]"
 
-# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------
 # P A R A M E T E R S
-# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------
+
 
 # Hit finding
 # -----------
@@ -85,8 +86,9 @@ mask_c2x2 = M_back.boolean_mask
 # Background
 # ----------
 
-Nbg = 500
+Nbg = 10
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
+bg_dir = this_dir + "/stack"
 
 # Plotting
 # --------
@@ -104,13 +106,12 @@ hitrateMeanMapParams = {
     'ybins': 10,
 }
 
-
-# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------
 # E V E N T   C A L L
-# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------
 
 def onEvent(evt):
-
+    
     # ----------- #
     # DIAGNOSTICS #
     # ----------- #
@@ -137,7 +138,7 @@ def onEvent(evt):
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
-        bg.write(evt,directory=this_dir+"/stack",interval=Nbg)
+        bg.write(evt,directory=bg_dir,interval=Nbg)
     else:
         print "HIT"
         if do_sizing:
@@ -197,7 +198,7 @@ def onEvent(evt):
                 # Plot image
                 plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Fit succeeded")
                 # Plot radial average
-                plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"],tracelen=radial_tracelen)           
+                plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)           
 
                 # Plot parameter histories
                 plotting.line.plotHistory(evt["analysis"]["offCenterX"])
