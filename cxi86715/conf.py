@@ -38,6 +38,7 @@ if do_autoonline:
     import getpass
     if getpass.getuser() == "cxiopr":
         do_online = True
+        do_testing = False
 
 if do_testing:
     state['LCLS/DataSource'] = 'exp=cxi86415:run=1:xtc'
