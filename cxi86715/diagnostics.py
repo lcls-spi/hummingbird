@@ -1,15 +1,11 @@
 
 
-def diag(evt):
+def initial_diagnostics(evt):
     # Print event variables
     try:
         print "Native keys: ",      evt.native_keys()
     except:
         print "WARNING: Cannot find native event keys."
-    try:
-        print "Hummingbird keys: ", evt.keys()
-    except:
-        print "WARNING: Cannot find hummingbird keys in event."
     try:
         print "EPICS keys: ",       evt["parameters"].keys()
     except:
@@ -27,3 +23,8 @@ def diag(evt):
     except:
         print "WARNING: Cannot find image detectors keys in event."
 
+def final_diagnostics(evt):
+    try:
+        print "Hummingbird keys: ", evt.keys()
+    except:
+        print "WARNING: Cannot find hummingbird keys in event."

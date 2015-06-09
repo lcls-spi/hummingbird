@@ -21,7 +21,7 @@ import diagnostics
 
 do_testing     = True
 do_diagnostics = False
-do_sizing      = True
+do_sizing      = False
 
 # ---------------------------------------------------------
 # P S A N A
@@ -116,17 +116,17 @@ hitrateMeanMapParams = {
 # ---------------------------------------------------------
 
 def onEvent(evt):
-    
-    # ----------- #
-    # DIAGNOSTICS #
-    # ----------- #
-    
-    # Spit out a lot for debugging
-    if do_diagnostics: diagnostics.diag(evt)
+
+    # ------------------- #
+    # INITIAL DIAGNOSTICS #
+    # ------------------- #
 
     # Time measurement
     analysis.event.printProcessingRate()
-
+    
+    # Spit out a lot for debugging
+    if do_diagnostics: diagnostics.initial_diagnostics(evt)
+    
     # -------- #
     # ANALYSIS #
     # -------- #
@@ -134,18 +134,15 @@ def onEvent(evt):
     # HIT FINDING
     # Simple hit finding by counting lit pixels
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
-    hit = evt["analysis"]["isHit - " + c2x2_key]
+    hit = evt["analysis"]["isHit - " + c2x2_key].data
 
     # COUNT PHOTONS
     # Count photons in different detector regions
     analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=1, aduThreshold=0.5)
     analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
     analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
-    
-    ### FOR TESTING
-    hit_bool = numpy.random.randint(2)
-    
-    if not hit_bool:
+        
+    if not hit:
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
@@ -176,17 +173,19 @@ def onEvent(evt):
     # SEND RESULT TO INTERFACE #
     # ------------------------ #
 
-    if not hit_bool:
+    # HITFINDING
+    # Keep hit history for hitrate plots
+    #plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key], runningHistogram=True)
+    # Keep hitscore history
+    plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key], runningHistogram=True)
+
+    if not hit:
         
         pass
     
     else:
 
         hit_msg = ""
-        
-        ### NEED FEATURE ISSUE #60
-        # Send hit info to interface
-        #plotting.line.plotHistory(hit)
 
         ### NEED CONF FROM JASON ->
         # Injector position
@@ -201,16 +200,18 @@ def onEvent(evt):
         ### <- NEED CONF FROM JASON
         
         if do_sizing:
+            
+            # Plot measurement radial average
+            plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)
+            # Plot fit radial average
+            plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
+            # Plot fit image
+            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Radial sphere fit result")
 
-            # Output
+            # Fit error history
             plotting.line.plotHistory(evt["analysis"]["fit error"])
 
             if fit_succeeded:
-
-                # Plot image
-                plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Fit succeeded")
-                # Plot radial average
-                plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)           
 
                 # Plot parameter histories
                 plotting.line.plotHistory(evt["analysis"]["offCenterX"])
@@ -233,13 +234,19 @@ def onEvent(evt):
 
                     # Diameter vs. intensity scatter plot
                     plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
-            else:
-                
-                # Plot image
-                plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Fit failed")
+                    # Plot image of good hit
+                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Good hit")
+
         
         # Plot the glorious shots
         # image
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2)
-        # radial average
-        plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)        
+  
+
+    # ------------------- #
+    # INITIAL DIAGNOSTICS #
+    # ------------------- #
+    
+    # Spit out a lot for debugging
+    if do_diagnostics: diagnostics.final_diagnostics(evt)
+
