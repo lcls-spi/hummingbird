@@ -1,16 +1,20 @@
-import os
+import os,sys
 import numpy
 import analysis.event
 import analysis.beamline
 import analysis.hitfinding
 import analysis.pixel_detector
 import analysis.stack
-import analysis.pixel_detector
+import analysis.sizing
 import plotting.image
+import plotting.line
+import plotting.correlation
 import ipc   
 import utils.reader
-import diagnostics
 this_dir = os.path.dirname(os.path.realpath(__file__))
+sys.path.append(this_dir)
+import diagnostics
+
 
 # Flags
 # -----
@@ -29,9 +33,9 @@ state = {
 }
 
 if do_testing:
-    state['LCLS/DataSource'] = 'exp=cxi86415:run=1:xtc',
+    state['LCLS/DataSource'] = 'exp=cxi86415:run=1:xtc'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=',
+    state['LCLS/DataSource'] = 'exp=cxi86715:run='
 
 # CSPAD 2x2
 # ---------
@@ -125,11 +129,13 @@ def onEvent(evt):
     # Simple hit finding by counting lit pixels
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key]
+    ### FOR TESTING
+    hit_dummy = numpy.random.randint(2)
     
-    if not hit:
+    if not hit_dummy:
         # COLLECTING BACKGROUND
         # Update background buffer
-        bg.add(c2x2)
+        bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
         bg.write(evt,directory=this_dir+"/stack",interval=Nbg)
     else:
@@ -163,50 +169,64 @@ def onEvent(evt):
     
     else:
 
+        hit_msg = ""
+        
+        ### NEED FEATURE ISSUE #60
         # Send hit info to interface
-        plotting.line.plotHistory(hit)
-        # Plot MeanMap of hitrate(x,y)
-        ### NEED CONF ->
-        #x = evt["parameters"]["injector_x"]
-        #y = evt["parameters"]["injector_y"]
-        #z = hit
-        #plotting.correlation.plotMeanMap(x,y,z, plotid='HitrateMeanMap', **hitrateMeanMap)
+        #plotting.line.plotHistory(hit)
+
+        ### NEED CONF FROM JASON ->
+        # Injector position
         #plotting.line.plotHistory(evt["analysis"]["injector_x"])
         #plotting.line.plotHistory(evt["analysis"]["injector_y"])
         #plotting.line.plotHistory(evt["analysis"]["injector_z"])
-        ### <- NEED CONF
-        # TO DO: injector position x,y,z
-        # TO DO: heatmap size injector position
-        # TO DO: heatmap intensity injector position
-        # if size in range
-        # plot image in separate buffer
-        # play sound
-        # else
-        # Plot fit image no success
-            
+        # Plot MeanMap of hitrate(x,y)
+        #x = evt["parameters"]["injector_x"]
+        #y = evt["parameters"]["injector_y"]
+        #z = hit
+        #plotting.correlation.plotMeanMap(x,y,z, plotid='HitrateMeanMap', **hitrateMeanMapParams)
+        ### <- NEED CONF FROM JASON
+        
         if do_sizing:
+
             # Output
             plotting.line.plotHistory(evt["analysis"]["fit error"])
 
             if fit_succeeded:
+
                 # Plot image
                 plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Fit succeeded")
                 # Plot radial average
-                plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"],tracelen=tracelen)           
+                plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"],tracelen=radial_tracelen)           
+
                 # Plot parameter histories
                 plotting.line.plotHistory(evt["analysis"]["offCenterX"])
                 plotting.line.plotHistory(evt["analysis"]["offCenterY"])
                 plotting.line.plotHistory(evt["analysis"]["diameter"])
                 plotting.line.plotHistory(evt["analysis"]["intensity"])
+
+                ### NEED CONF ->
+                #x = evt["parameters"]["injector_x"]
+                #y = evt["parameters"]["injector_y"]
+                #z = evt["analysis"]["diameter"]
+                #plotting.correlation.plotMeanMap(x,y,z, plotid='DiameterMeanMap', **diameterMeanMapParams)
+                #x = evt["parameters"]["injector_x"]
+                #y = evt["parameters"]["injector_y"]
+                #z = evt["analysis"]["intensity"]
+                #plotting.correlation.plotMeanMap(x,y,z, plotid='IntensityMeanMap', **intensityMeanMapParams)
+                ### <- NEED CONF
+                        
                 if good_hit:
+
+                    # Diameter vs. intensity scatter plot
                     plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
             else:
+                
                 # Plot image
                 plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Fit failed")
         
         # Plot the glorious shots
         # image
-        hit_msg = ""
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2)
         # radial average
         plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)        
