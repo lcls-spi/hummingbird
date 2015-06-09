@@ -4,36 +4,54 @@ import analysis.event
 import analysis.beamline
 import analysis.hitfinding
 import analysis.pixel_detector
-import analysis.background
+import analysis.stack
 import analysis.pixel_detector
+import plotting.image
 import ipc   
 import utils.reader
+import diagnostics
 this_dir = os.path.dirname(os.path.realpath(__file__))
 
+# Flags
+# -----
+
+do_testing     = True
+do_diagnostics = True
+do_sizing      = True
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# P S A N A
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
 state = {
-    'Facility': 'LCLS',
-    #'LCLS/DataSource': ipc.mpi.get_source(['/data/rawdata/LCLS/cxi/cxic9714/xtc/e419-r0203-s01-c00.xtc', 
-    #                                       '/data/rawdata/LCLS/cxi/cxic9714/xtc/e419-r0204-s01-c00.xtc'])
-    #'LCLS/DataSource': 'exp=cxi86715:run=10',
-    'LCLS/DataSource': 'exp=cxi86415:run=1:xtc',
-    #'LCLS/PsanaConf': 'psana_cfg/Ds2.cfg',
-    'LCLS/PsanaConf': 'psana_cfg/Dg2.cfg',
+    'Facility':        'LCLS',
+    'LCLS/PsanaConf':  'psana_cfg/Dg2.cfg',
 }
 
-# Psana identifiers
-backdet_id = "CsPad Dg3[calibrated]"
+if do_testing:
+    state['LCLS/DataSource'] = 'exp=cxi86415:run=1:xtc',
+else:
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=',
 
-##############
-# PARAMETERS #
-##############
+# CSPAD 2x2
+# ---------
+
+c2x2_type = "image"
+c2x2_key  = "CsPad Dg3[image]"
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# P A R A M E T E R S
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Hit finding
 # -----------
-aduThreshold = 10
+
+aduThreshold      = 10
 hitscoreThreshold = 200
 
 # Sizing
 # ------
+
 modelParams = {
     'wavelength':0.12398,
     'pixelsize':110,
@@ -46,68 +64,149 @@ sizingParams = {
     'brute_evals':10,
 }
 
-# Geometry
-G_back = utils.reader.GeometryReader(this_dir + "/geometry/geometry_back.h5")
+# Classification
+# --------------
+
+fit_error_threshold  = 1.
+diameter_expected    = 70
+diameter_error_max   = 30
 
 # Mask
 # ----
-#M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
-#mask_back = M_back.boolean_mask
 
+M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
+mask_c2x2 = M_back.boolean_mask
+(ny_c2x2,nx_c2x2) = mask_c2x2.shape
 
 # Background
 # ----------
-Nbg = 100
-#Nbg = 10000
-bg = analysis.background.Stack(name="bg",maxLen=Nbg)
+
+Nbg = 500
+bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
+
+# Plotting
+# --------
+
+# Radial averages
+radial_tracelen = 100
+
+# Hitrate mean map 
+hitrateMeanMapParams = {
+    'xmin': -1000,
+    'xmax': +1000,
+    'ymin': -1000,
+    'ymax': +1000,
+    'xbins': 10,
+    'ybins': 10,
+}
+
+
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
+# E V E N T   C A L L
+# ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def onEvent(evt):
-    #print evt["parameters"].keys()
-    #analysis.beamline.printPulseEnergy(evt['pulseEnergies'])
-    #analysis.beamline.printPhotonEnergy(evt['photonEnergies'])
-    #print "EPICS photon energy = %g eV" %(evt['parameters']['SIOC:SYS0:ML00:AO541'].data)
-    #analysis.pixel_detector.printStatistics(evt['photonPixelDetectors'])
-    #analysis.pixel_detector.printStatistics(evt['ionTOFs'])
-    #print "Rank = ", ipc.mpi.rank,fr analysis.event.printID(evt['eventID'])
-    # Count Nr. of Photons
-    #analysis.pixel_detector.totalNrPhotons(evt,"photonPixelDetectors", "CCD")
 
+    # ----------- #
+    # DIAGNOSTICS #
+    # ----------- #
+    
+    # Spit out a lot for debugging
+    if do_diagnostics: diagnostics.diag(evt)
+
+    # Time measurement
     analysis.event.printProcessingRate()
-    back = evt["image"]["CsPad Dg3[image]"].data
-    #analysis.pixel_detector.assemble(evt,"calibrated",backdet_id,x=G_back.x,y=G_back.y)
-    #cspad2x2_ass = evt["analysis"]["assembled - "+backdet_id]
-    # Update background buffer
-    bg.add(back)
-    # Write background to file
-    bg.write(evt,directory=this_dir+"/bg",interval=100)
 
-    # Simple hitfinding (Count Nr. of lit pixels)
-    #analysis.hitfinding.countLitPixels(evt, "calibrated", backdet_id, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_back)
+    # -------- #
+    # ANALYSIS #
+    # -------- #
+    
+    # HIT FINDING
+    # Simple hit finding by counting lit pixels
+    analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
+    hit = evt["analysis"]["isHit - " + c2x2_key]
+    
+    if not hit:
+        # COLLECTING BACKGROUND
+        # Update background buffer
+        bg.add(c2x2)
+        # Write background to file
+        bg.write(evt,directory=this_dir+"/stack",interval=Nbg)
+    else:
+        print "HIT"
+        if do_sizing:
+            # RADIAL SPHERE FIT
+            # Find the center of diffraction
+            analysis.sizing.findCenter(evt, c2x2_type, c2x2_key, mask=mask_c2x2, maxshift=20, threshold=0.5, blur=4)
+            # Calculate radial average
+            analysis.pixel_detector.radial(evt, c2x2_type, c2x2_key, mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
+            # Fitting sphere model to get size and intensity
+            analysis.sizing.fitSphereRadial(evt, "analysis", "radial distance - " + c2x2_key, "radial average - " + c2x2_key, **dict(modelParams, **sizingParams))
+            # Calculate diffraction pattern from fit result 
+            analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_c2x2,nx_c2x2), poisson=True, **modelParams)
+            # Calculate radial average of diffraction pattern from fit result
+            analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
+            # Decide whether or not the fit was successful
+            fit_succeeded = evt["analysis"]["fit error"].data < fit_error_threshold
+            good_hit = fit_succeeded
+            if fit_succeeded:
+                # Decide whether or not this was a good hit, i.e. a hit in the expected size range
+                good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
+               
+    # ------------------------ #
+    # SEND RESULT TO INTERFACE #
+    # ------------------------ #
 
-    #print evt["analysis"]["hitscore - " + backdet_id].data
+    if not hit:
+        
+        pass
+    
+    else:
 
-    # Hit analysis
-    #if evt["analysis"]["isHit - " + backdet_id]:
-    #    print "HIT"
-    #if evt["analysis"]["isHit - Dg2"]:
-        # RADIAL SPHERE FIT
-        #------------------
-        # Find the center of diffraction
-        #analysis.sizing.findCenter(evt, "calibrated", "Dg2", mask=mask_back, maxshift=20, threshold=0.5, blur=4)
-        # Calculate radial average
-        #cx = evt["analysis"]["offCenterX"].data + (nx - 1) / 2.  
-        #cy = evt["analysis"]["offCenterY"].data + (ny - 1) / 2.
-        #analysis.pixel_detector.radial(evt, "photonPixelDetectors", "CCD", mask=mask_back, cx=cx, cy=cy)          
-        # Fitting sphere model to get size and intensity
-        #analysis.sizing.fitSphereRadial(evt, "analysis", "radial distance - CCD", "radial average - CCD", **dict(modelParams, **sizingParams))
-        # Calculate diffraction pattern from fit result 
-        #analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny,nx), poisson=False, **modelParams)
-        # Calculate radial average of diffraction pattern from fit result
-        #analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask, cx=cx, cy=cy)
-        # Output records      
-        # Plot radial average
-        #plotting.line.plotTrace(evt["analysis"]["radial average - CCD"], evt["analysis"]["radial distance - CCD"])
-        #rlen = 100
-        #ipc.new_data("radial fit", numpy.array([evt["analysis"]["radial distance - fit"].data.ravel()[:rlen], evt["analysis"]["radial average - fit"].data.ravel()[:rlen]], copy=False))
-        #ipc.new_data("radial CCD", numpy.array([evt["analysis"]["radial distance - CCD"].data.ravel()[:rlen], evt["analysis"]["radial average - CCD"].data.ravel()[:rlen]], copy=False))
+        # Send hit info to interface
+        plotting.line.plotHistory(hit)
+        # Plot MeanMap of hitrate(x,y)
+        ### NEED CONF ->
+        #x = evt["parameters"]["injector_x"]
+        #y = evt["parameters"]["injector_y"]
+        #z = hit
+        #plotting.correlation.plotMeanMap(x,y,z, plotid='HitrateMeanMap', **hitrateMeanMap)
+        #plotting.line.plotHistory(evt["analysis"]["injector_x"])
+        #plotting.line.plotHistory(evt["analysis"]["injector_y"])
+        #plotting.line.plotHistory(evt["analysis"]["injector_z"])
+        ### <- NEED CONF
+        # TO DO: injector position x,y,z
+        # TO DO: heatmap size injector position
+        # TO DO: heatmap intensity injector position
+        # if size in range
+        # plot image in separate buffer
+        # play sound
+        # else
+        # Plot fit image no success
+            
+        if do_sizing:
+            # Output
+            plotting.line.plotHistory(evt["analysis"]["fit error"])
 
+            if fit_succeeded:
+                # Plot image
+                plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Fit succeeded")
+                # Plot radial average
+                plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"],tracelen=tracelen)           
+                # Plot parameter histories
+                plotting.line.plotHistory(evt["analysis"]["offCenterX"])
+                plotting.line.plotHistory(evt["analysis"]["offCenterY"])
+                plotting.line.plotHistory(evt["analysis"]["diameter"])
+                plotting.line.plotHistory(evt["analysis"]["intensity"])
+                if good_hit:
+                    plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
+            else:
+                # Plot image
+                plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Fit failed")
+        
+        # Plot the glorious shots
+        # image
+        hit_msg = ""
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2)
+        # radial average
+        plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)        
