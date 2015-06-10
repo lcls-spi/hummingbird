@@ -46,11 +46,13 @@ state = {
     'LCLS/PsanaConf':  ('psana_%s.cfg' % experiment),
 }
 
+cxiopr = False
 if do_autoonline:
     import getpass
     if getpass.getuser() == "cxiopr":
-        do_online = True
+        do_online  = True
         do_testing = False
+        cxiopr     = True
 
 if do_testing:
     state['LCLS/DataSource'] = 'exp=cxi86415:run=25:xtc'
@@ -138,7 +140,10 @@ mask_c2x2 = M_back.boolean_mask
 Nbg = 100
 fbg = 100
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
-bg_dir = this_dir + "/stack"
+if cxiopr:
+    bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
+else:
+    bg_dir = this_dir + "/stack"
 
 # Plotting
 # --------
@@ -177,11 +182,9 @@ def onEvent(evt):
     # -------- #
     
     # HIT FINDING
+    #analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
+
     # Simple hit finding by counting lit pixels
-    print evt.keys()
-    print evt.native_keys()
-    print evt["ionTOFs"].keys()
-    analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
     
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key].data
