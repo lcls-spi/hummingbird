@@ -49,7 +49,7 @@ if do_autoonline:
         cxiopr     = True
 
 if do_online:
-    state['LCLS/DataSource'] = 'shmem=psana.0'
+    state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
     state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
 
