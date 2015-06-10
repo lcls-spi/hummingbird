@@ -153,6 +153,12 @@ hitrateMeanMapParams = {
     'ybins': 10,
 }
 
+# Image
+vmin_c2x2 = 0
+vmax_c2x2 = 100
+vmin_clarge = 0
+vmax_clarge = 10
+
 # ---------------------------------------------------------
 # E V E N T   C A L L
 # ---------------------------------------------------------
@@ -251,18 +257,18 @@ def onEvent(evt):
         plotting.correlation.plotMeanMap(x, y, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
 
         # Image of hit
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2")
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2", vmin=vmin_c2x2, vmax=vmax_c2x2)
         if do_front:
             # Front detector image (central 4 asics) of hit
             #plotting.image.plotImage(evt[clarge_type][clarge_key])
-            plotting.image.plotImage(evt["analysis"]["central4Asics"])
+            plotting.image.plotImage(evt["analysis"]["central4Asics"], vmin=vmin_clarge, vmax=vmax_clarge)
             if do_assemble_front:
-                plotting.image.plotImage(evt["analysis"]["assembled - " + clarge_key], msg="", name="Cspad large (central 4 asics): Hits")
+                plotting.image.plotImage(evt["analysis"]["assembled - " + clarge_key], msg="", name="Cspad large (central 4 asics): Hits", vmin=vmin_clarge, vmax=vmin_clarge)
 
         if do_sizing:
 
             # Image of fit
-            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Radial sphere fit result")
+            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Radial sphere fit result", vmin=vmin_c2x2, vmax=vmax_c2x2)
             
             # Plot measurement radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)
@@ -286,11 +292,11 @@ def onEvent(evt):
                     # Diameter vs. intensity scatter plot
                     plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
                     # Image of good hit
-                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Cspad 2x2: Correct particle size")
+                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Cspad 2x2: Correct particle size", vmin=vmin_c2x2, vmax=vmax_c2x2)
                     
                     if do_front:
                         # Front detector image of good hit
-                        plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Cspad large (full): Correct particle size")       
+                        plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Cspad large (full): Correct particle size", vmin=vmin_clarge, vmax=vmax_clarge)       
         
     # ----------------- #
     # FINAL DIAGNOSTICS #
