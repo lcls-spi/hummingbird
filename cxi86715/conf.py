@@ -19,19 +19,31 @@ import diagnostics
 # Flags
 # -----
 
+# From file
 do_testing     = False
+# Lots of ouput
 do_diagnostics = False
+# Sizing
 do_sizing      = False
+# Running from shared memory
 do_online      = False
+# Make sure to run online on cxiopr
 do_autoonline  = True
+# Front detector activated
+do_front       = True
 
 # ---------------------------------------------------------
 # P S A N A
 # ---------------------------------------------------------
 
+# NOW
+experiment = "cxi86715"
+# OLD
+#experiment = "cxi86415"
+
 state = {
     'Facility':        'LCLS',
-    'LCLS/PsanaConf':  'psana_cfg/psana.cfg',
+    'LCLS/PsanaConf':  ('psana_%s.cfg' % experiment),
 }
 
 if do_autoonline:
@@ -51,24 +63,45 @@ if do_online:
 # CSPAD 2x2
 # ---------
 
+c2x2_ids = {
+    'cxi86415': 'Dg3',
+    'cxi86715': 'Dg2',
+}
+c2x2_id = c2x2_ids[experiment]
+
 c2x2_type = "image"
-c2x2_key  = "CsPad Dg3[image]"
+c2x2_key  = "CsPad %s[image]" % c2x2_id
 
 # CSPAD large
 
-clarge_type = "calibrated"
-clarge_key = "CsPad Ds2[calibrated]"
+clarge_ids = {
+    'cxi86415': 'Ds2',
+    'cxi86715': 'Ds2',
+}
+clarge_id = clarge_ids[experiment]
+
+clarge_type = "photons"
+clarge_key  = "CsPad %s[photons]" % clarge_id
+#clarge_type = "calibrated"
+#clarge_key  = "CsPad %s[calibrated]" % clarge_id
+
+# INJECTOR MOTORS
+
+injector_x_key = "CXI:PI2:MMS:01.RBV"
+injector_y_key = "CXI:PI2:MMS:02.RBV"
+injector_z_key = "CXI:PI2:MMS:03.RBV"
 
 # ---------------------------------------------------------
 # P A R A M E T E R S
 # ---------------------------------------------------------
 
-
 # Hit finding
 # -----------
 
+#aduThreshold      = 20
 aduThreshold      = 10
-hitscoreThreshold = 200
+hitscoreThreshold = 1500
+#hitscoreThreshold = 200
 
 # Sizing
 # ------
@@ -102,7 +135,8 @@ mask_c2x2 = M_back.boolean_mask
 # Background
 # ----------
 
-Nbg = 1000
+Nbg = 100
+fbg = 100
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
 bg_dir = this_dir + "/stack"
 
@@ -153,17 +187,21 @@ def onEvent(evt):
     # COUNT PHOTONS
     # Count photons in different detector regions
     analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=1, aduThreshold=0.5)
-    analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
-    analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
-        
+    if do_front:
+        analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
+        analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
+        # Count photons in ascis
+
     if not hit:
+        print "MISS (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
-        bg.write(evt,directory=bg_dir,interval=Nbg)
+        bg.write(evt,directory=bg_dir,interval=fbg)
     else:
-        print "HIT"
+        print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+        good_hit = False
         if do_sizing:
             # RADIAL SPHERE FIT
             # Find the center of diffraction
@@ -178,7 +216,6 @@ def onEvent(evt):
             analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
             # Decide whether or not the fit was successful
             fit_succeeded = evt["analysis"]["fit error"].data < fit_error_threshold
-            good_hit = fit_succeeded
             if fit_succeeded:
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
@@ -189,9 +226,9 @@ def onEvent(evt):
 
     # HITFINDING
     # Keep hit history for hitrate plots
-    #plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key], runningHistogram=True)
+    plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key])
     # Keep hitscore history
-    plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key], runningHistogram=True)
+    plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key])
 
     if not hit:
         
@@ -199,19 +236,15 @@ def onEvent(evt):
     
     else:
 
-        hit_msg = ""
-
-        ### NEED CONF FROM JASON ->
         # Injector position
-        #plotting.line.plotHistory(evt["analysis"]["injector_x"])
-        #plotting.line.plotHistory(evt["analysis"]["injector_y"])
-        #plotting.line.plotHistory(evt["analysis"]["injector_z"])
+        x = evt["parameters"][injector_x_key]
+        y = evt["parameters"][injector_y_key]
+        z = evt["parameters"][injector_z_key]
+        plotting.line.plotHistory(x)
+        plotting.line.plotHistory(y)
+        plotting.line.plotHistory(z)
         # Plot MeanMap of hitrate(x,y)
-        #x = evt["parameters"]["injector_x"]
-        #y = evt["parameters"]["injector_y"]
-        #z = hit
-        #plotting.correlation.plotMeanMap(x,y,z, plotid='HitrateMeanMap', **hitrateMeanMapParams)
-        ### <- NEED CONF FROM JASON
+        plotting.correlation.plotMeanMap(x, y, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
         
         if do_sizing:
             
@@ -221,7 +254,6 @@ def onEvent(evt):
             plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
             # Plot fit image
             plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Radial sphere fit result")
-
             # Fit error history
             plotting.line.plotHistory(evt["analysis"]["fit error"])
 
@@ -230,36 +262,29 @@ def onEvent(evt):
                 # Plot parameter histories
                 plotting.line.plotHistory(evt["analysis"]["offCenterX"])
                 plotting.line.plotHistory(evt["analysis"]["offCenterY"])
-                plotting.line.plotHistory(evt["analysis"]["diameter"])
-                plotting.line.plotHistory(evt["analysis"]["intensity"])
-
-                ### NEED CONF ->
-                #x = evt["parameters"]["injector_x"]
-                #y = evt["parameters"]["injector_y"]
-                #z = evt["analysis"]["diameter"]
-                #plotting.correlation.plotMeanMap(x,y,z, plotid='DiameterMeanMap', **diameterMeanMapParams)
-                #x = evt["parameters"]["injector_x"]
-                #y = evt["parameters"]["injector_y"]
-                #z = evt["analysis"]["intensity"]
-                #plotting.correlation.plotMeanMap(x,y,z, plotid='IntensityMeanMap', **intensityMeanMapParams)
-                ### <- NEED CONF
+                plotting.line.plotHistory(evt["analysis"]["diameter"], runningHistogram=True)
+                plotting.line.plotHistory(evt["analysis"]["intensity"], runningHistogram=True)
+                plotting.correlation.plotMeanMap(x,y,evt["analysis"]["diameter"].data, plotid='DiameterMeanMap', **diameterMeanMapParams)
+                plotting.correlation.plotMeanMap(x,y,evt["analysis"]["intensity"].data, plotid='IntensityMeanMap', **intensityMeanMapParams)
                         
                 if good_hit:
 
                     # Diameter vs. intensity scatter plot
                     plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
                     # Plot image of good hit
-                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Good hit")
+                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Correct size")
+                    
+                    if front:
+                        plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Correct size")
 
-        
-        # Plot the glorious shots
-        # image
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2)
-  
+        # Plot bad hits
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2)
 
-    # ------------------- #
-    # INITIAL DIAGNOSTICS #
-    # ------------------- #
+        #plotting.image.plotImage(evt[clarge_type][clarge_key])
+
+    # ----------------- #
+    # FINAL DIAGNOSTICS #
+    # ----------------- #
     
     # Spit out a lot for debugging
     if do_diagnostics: diagnostics.final_diagnostics(evt)

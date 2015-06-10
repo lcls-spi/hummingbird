@@ -28,3 +28,5 @@ def final_diagnostics(evt):
         print "Hummingbird keys: ", evt.keys()
     except:
         print "WARNING: Cannot find hummingbird keys in event."
+
+    plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], hmin=-49, hmax=50, bins=100, label='', density=False, history=100)
