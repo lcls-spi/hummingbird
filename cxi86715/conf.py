@@ -19,8 +19,6 @@ import diagnostics
 # Flags
 # -----
 
-# From file
-do_testing     = False
 # Lots of ouput
 do_diagnostics = False
 # Sizing
@@ -36,33 +34,26 @@ do_front       = False
 # P S A N A
 # ---------------------------------------------------------
 
-experiment = "cxi86715"
-
 state = {
     'Facility':        'LCLS',
-    'LCLS/PsanaConf':  ('psana_%s.cfg' % experiment),
 }
-
-if do_front:
-    state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
-else:
-    state['LCLS/PsanaConf'] = 'psana_cfg/cspad2x2.cfg'
 
 cxiopr = False
 if do_autoonline:
     import getpass
     if getpass.getuser() == "cxiopr":
         do_online  = True
-        do_testing = False
         cxiopr     = True
-
-if do_testing:
-    state['LCLS/DataSource'] = 'exp=cxi86415:run=25:xtc'
-else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
 
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0'
+else:
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
+
+if do_front:
+    state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
+else:
+    state['LCLS/PsanaConf'] = 'psana_cfg/cspad2x2.cfg'
 
 # CSPAD 2x2
 # ---------
