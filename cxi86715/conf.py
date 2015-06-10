@@ -173,8 +173,8 @@ def onEvent(evt):
     analysis.event.printProcessingRate()
 
     # Send Fiducials and Timestamp
-    print evt["eventID"]["Timestamp"].fiducials
-    print evt["eventID"]["Timestamp"].lcls_time
+    #print evt["eventID"]["Timestamp"].fiducials
+    #print evt["eventID"]["Timestamp"].lcls_time
     plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
     
     # Spit out a lot for debugging
