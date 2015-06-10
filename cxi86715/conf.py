@@ -9,8 +9,9 @@ import analysis.sizing
 import plotting.image
 import plotting.line
 import plotting.correlation
-import ipc   
+import ipc  
 import utils.reader
+import utils.array
 this_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_dir)
 import diagnostics
@@ -64,9 +65,8 @@ c2x2_key  = "CsPad Dg2[image]"
 # CSPAD large
 
 clarge_type = "photons"
-clarge_key  = "CsPad Ds2[photons]"
 #clarge_type = "calibrated"
-#clarge_key  = "CsPad %s[calibrated]" % clarge_id
+clarge_key  = "CsPad Ds2[%s]" % clarge_type
 
 # INJECTOR MOTORS
 
@@ -114,6 +114,15 @@ diameter_error_max   = 30
 M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
 mask_c2x2 = M_back.boolean_mask
 (ny_c2x2,nx_c2x2) = mask_c2x2.shape
+
+# Geometry
+# --------
+
+pixel_size = 110E-6
+G_front = utils.reader.GeometryReader(this_dir + "/geometry/geometry_front.h5", pixel_size=110.E-6)
+x_front = numpy.array(utils.array.cheetahToSlacH5(G_front.x), dtype="int")
+y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
+
 
 # Background
 # ----------
@@ -178,6 +187,8 @@ def onEvent(evt):
         analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
         analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
+        analysis.pixel_detector.assemble(evt, clarge_type, clarge_key, x=x_front, y=y_front, nx=400, ny=400, subset=map(lambda i : (i * 8 + 1) * 2, xrange(4)))
+        print evt["analysis"]["assembled - "+clarge_key].data.shape
 
     if not hit or bgall:
         print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
@@ -206,6 +217,7 @@ def onEvent(evt):
             if fit_succeeded:
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
+        
                
     # ------------------------ #
     # SEND RESULT TO INTERFACE #
@@ -268,6 +280,8 @@ def onEvent(evt):
         else:
             if do_front:
                 plotting.image.plotImage(evt["analysis"]["central4Asics"], msg="", name="Front detector - central 4 asics")
+                print  evt["analysis"]["assembled - " + clarge_key]
+                plotting.image.plotImage(evt["analysis"]["assembled - " + clarge_key], msg="", name="Front detector - assmebled central 4 asics")
 
         # Plot bad hits
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2)
