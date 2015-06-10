@@ -83,9 +83,9 @@ injector_z_key = "CXI:PI2:MMS:03.RBV"
 # Hit finding
 # -----------
 
-#aduThreshold      = 20
-aduThreshold      = 10
-hitscoreThreshold = 1500
+aduThreshold      = 20
+#aduThreshold      = 10
+hitscoreThreshold = 10000
 #hitscoreThreshold = 200
 
 # Sizing
@@ -151,6 +151,8 @@ hitrateMeanMapParams = {
     'ymax': +1000,
     'xbins': 10,
     'ybins': 10,
+    'xlabel': 'Injector Position in y',
+    'ylabel': 'Injector Position in z'  
 }
 
 # Image
@@ -173,8 +175,6 @@ def onEvent(evt):
     analysis.event.printProcessingRate()
 
     # Send Fiducials and Timestamp
-    #print evt["eventID"]["Timestamp"].fiducials
-    #print evt["eventID"]["Timestamp"].lcls_time
     plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
     
     # Spit out a lot for debugging
@@ -187,8 +187,7 @@ def onEvent(evt):
     # HIT FINDING
     #analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
 
-    # Simple hit finding by counting lit pixels
-    
+    # Simple hit finding by counting lit pixels    
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key].data
 
@@ -204,14 +203,14 @@ def onEvent(evt):
 
         
     if not hit or bgall:
-        # print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+        print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
         bg.write(evt,directory=bg_dir,interval=fbg)
     if hit:
-        # print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+        print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
         if do_sizing:
             # RADIAL SPHERE FIT
@@ -242,24 +241,26 @@ def onEvent(evt):
     # Keep hitscore history
     plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key])
 
-    if not hit:
-        
-        plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
+    # Injector position
+    x = evt["parameters"][injector_x_key]
+    y = evt["parameters"][injector_y_key]
+    z = evt["parameters"][injector_z_key]
+    plotting.line.plotHistory(x)
+    plotting.line.plotHistory(y)
+    plotting.line.plotHistory(z)
 
-        if do_front:
-            plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
+    # ToF
+    plotting.line.plotTrace(evt["ionTOFs"]["Acqiris 0 Channel 0"]) 
+
+    # Nr. of photons 
+    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
+    if do_front:
+        plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
     
     if hit:
 
-        # Injector position
-        x = evt["parameters"][injector_x_key]
-        y = evt["parameters"][injector_y_key]
-        z = evt["parameters"][injector_z_key]
-        plotting.line.plotHistory(x)
-        plotting.line.plotHistory(y)
-        plotting.line.plotHistory(z)
-        # Plot MeanMap of hitrate(x,y)
-        plotting.correlation.plotMeanMap(x, y, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
+        # Plot MeanMap of hitrate(y,z)
+        plotting.correlation.plotMeanMap(y, z, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
 
         # Image of hit
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2", vmin=vmin_c2x2, vmax=vmax_c2x2)
