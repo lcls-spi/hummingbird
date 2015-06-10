@@ -19,11 +19,18 @@ import diagnostics
 # Flags
 # -----
 
+# From file
 do_testing     = True
-do_diagnostics = False
+# Lots of ouput
+do_diagnostics = True
+# Sizing
 do_sizing      = False
+# Running from shared memory
 do_online      = False
+# Make sure to run online on cxiopr
 do_autoonline  = True
+# Front detector activated
+do_front       = True
 
 # ---------------------------------------------------------
 # P S A N A
@@ -46,7 +53,7 @@ if do_autoonline:
         do_testing = False
 
 if do_testing:
-    state['LCLS/DataSource'] = ('exp=%s:run=11:xtc' % experiment)
+    state['LCLS/DataSource'] = ('exp=%s:run=14:xtc' % experiment)
 else:
     state['LCLS/DataSource'] = ('exp=%s:run=' % experiment)
 
@@ -78,6 +85,12 @@ clarge_key  = "CsPad %s[photons]" % clarge_id
 #clarge_type = "calibrated"
 #clarge_key  = "CsPad %s[calibrated]" % clarge_id
 
+# INJECTOR MOTORS
+
+injector_x_key = "CXI:PI2:MMS:01.RBV"
+injector_y_key = "CXI:PI2:MMS:02.RBV"
+injector_z_key = "CXI:PI2:MMS:03.RBV"
+
 # ---------------------------------------------------------
 # P A R A M E T E R S
 # ---------------------------------------------------------
@@ -87,7 +100,7 @@ clarge_key  = "CsPad %s[photons]" % clarge_id
 
 #aduThreshold      = 20
 aduThreshold      = 10
-hitscoreThreshold = 1
+hitscoreThreshold = 1500
 #hitscoreThreshold = 200
 
 # Sizing
@@ -123,6 +136,7 @@ mask_c2x2 = M_back.boolean_mask
 # ----------
 
 Nbg = 1000
+fbg = 10000
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
 bg_dir = this_dir + "/stack"
 
@@ -170,8 +184,9 @@ def onEvent(evt):
     # COUNT PHOTONS
     # Count photons in different detector regions
     analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=1, aduThreshold=0.5)
-    analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
-    analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
+    if do_front:
+        analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
+        analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
         
     if not hit:
         print "MISS (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
@@ -179,7 +194,7 @@ def onEvent(evt):
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
-        bg.write(evt,directory=bg_dir,interval=Nbg)
+        bg.write(evt,directory=bg_dir,interval=fbg)
     else:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         if do_sizing:
@@ -196,10 +211,11 @@ def onEvent(evt):
             analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
             # Decide whether or not the fit was successful
             fit_succeeded = evt["analysis"]["fit error"].data < fit_error_threshold
-            good_hit = fit_succeeded
             if fit_succeeded:
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
+            else:
+                good_hit = False
                
     # ------------------------ #
     # SEND RESULT TO INTERFACE #
@@ -207,11 +223,9 @@ def onEvent(evt):
 
     # HITFINDING
     # Keep hit history for hitrate plots
-    ### DOES NOT WORK LIKE THIS!!!
     plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key])
     # Keep hitscore history
     plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key])
-    #plotting.line.plotHistogram(evt["analysis"]["hitscore - " + c2x2_key], hmin=900, hmax=1100, bins=100, label='', density=False, history=100)
 
     if not hit:
         
@@ -221,17 +235,16 @@ def onEvent(evt):
 
         hit_msg = ""
 
-        ### NEED CONF FROM JASON ->
         # Injector position
-        #plotting.line.plotHistory(evt["analysis"]["injector_x"])
-        #plotting.line.plotHistory(evt["analysis"]["injector_y"])
-        #plotting.line.plotHistory(evt["analysis"]["injector_z"])
+        x = evt["parameter"][injector_x_key]
+        y = evt["parameter"][injector_y_key]
+        z = evt["parameter"][injector_z_key]
+        print "Injector",x,y,z
+        plotting.line.plotHistory(x)
+        plotting.line.plotHistory(y)
+        plotting.line.plotHistory(z)
         # Plot MeanMap of hitrate(x,y)
-        #x = evt["parameters"]["injector_x"]
-        #y = evt["parameters"]["injector_y"]
-        #z = hit
-        #plotting.correlation.plotMeanMap(x,y,z, plotid='HitrateMeanMap', **hitrateMeanMapParams)
-        ### <- NEED CONF FROM JASON
+        plotting.correlation.plotMeanMap(x, y, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
         
         if do_sizing:
             
