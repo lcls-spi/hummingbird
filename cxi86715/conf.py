@@ -182,11 +182,9 @@ def onEvent(evt):
     # -------- #
     
     # HIT FINDING
+    #analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
+
     # Simple hit finding by counting lit pixels
-    print evt.keys()
-    print evt.native_keys()
-    print evt["ionTOFs"].keys()
-    analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
     
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key].data
