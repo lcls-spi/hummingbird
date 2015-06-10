@@ -21,15 +21,17 @@ import diagnostics
 # -----
 
 # Lots of ouput
-do_diagnostics = False
+do_diagnostics    = False
 # Sizing
-do_sizing      = False
+do_sizing         = False
 # Running from shared memory
-do_online      = False
+do_online         = False
 # Make sure to run online on cxiopr
-do_autoonline  = True
+do_autoonline     = True
 # Front detector activated
-do_front       = True
+do_front          = True
+# Do assembly of the front
+do_assemble_front = False
 
 # ---------------------------------------------------------
 # P S A N A
@@ -123,7 +125,6 @@ G_front = utils.reader.GeometryReader(this_dir + "/geometry/geometry_front.h5", 
 x_front = numpy.array(utils.array.cheetahToSlacH5(G_front.x), dtype="int")
 y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 
-
 # Background
 # ----------
 
@@ -151,6 +152,12 @@ hitrateMeanMapParams = {
     'xbins': 10,
     'ybins': 10,
 }
+
+# Image
+vmin_c2x2 = 0
+vmax_c2x2 = 100
+vmin_clarge = 0
+vmax_clarge = 10
 
 # ---------------------------------------------------------
 # E V E N T   C A L L
@@ -184,12 +191,13 @@ def onEvent(evt):
     # Count photons in different detector regions
     analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=1, aduThreshold=0.5)
     if do_front:
-        analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
+        if do_assemble_front:
+            analysis.pixel_detector.assemble(evt, clarge_type, clarge_key, x=x_front, y=y_front, nx=400, ny=400, subset=map(lambda i : (i * 8 + 1) * 2, xrange(4)))
+        analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
-        analysis.pixel_detector.assemble(evt, clarge_type, clarge_key, x=x_front, y=y_front, nx=400, ny=400, subset=map(lambda i : (i * 8 + 1) * 2, xrange(4)))
-        print evt["analysis"]["assembled - "+clarge_key].data.max()
 
+        
     if not hit or bgall:
         print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
@@ -231,8 +239,10 @@ def onEvent(evt):
 
     if not hit:
         
-        plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
+
+        if do_front:
+            plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
     
     if hit:
 
@@ -245,15 +255,25 @@ def onEvent(evt):
         plotting.line.plotHistory(z)
         # Plot MeanMap of hitrate(x,y)
         plotting.correlation.plotMeanMap(x, y, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
-        
+
+        # Image of hit
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2", vmin=vmin_c2x2, vmax=vmax_c2x2)
+        if do_front:
+            # Front detector image (central 4 asics) of hit
+            #plotting.image.plotImage(evt[clarge_type][clarge_key])
+            plotting.image.plotImage(evt["analysis"]["central4Asics"], vmin=vmin_clarge, vmax=vmax_clarge)
+            if do_assemble_front:
+                plotting.image.plotImage(evt["analysis"]["assembled - " + clarge_key], msg="", name="Cspad large (central 4 asics): Hits", vmin=vmin_clarge, vmax=vmin_clarge)
+
         if do_sizing:
+
+            # Image of fit
+            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Radial sphere fit result", vmin=vmin_c2x2, vmax=vmax_c2x2)
             
             # Plot measurement radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)
             # Plot fit radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
-            # Plot fit image
-            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Radial sphere fit result")
             # Fit error history
             plotting.line.plotHistory(evt["analysis"]["fit error"])
 
@@ -271,26 +291,13 @@ def onEvent(evt):
 
                     # Diameter vs. intensity scatter plot
                     plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
-                    # Plot image of good hit
-                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Correct size")
+                    # Image of good hit
+                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Cspad 2x2: Correct particle size", vmin=vmin_c2x2, vmax=vmax_c2x2)
                     
                     if do_front:
-                        plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Correct size")
-
-        else:
-            if do_front:
-                plotting.image.plotImage(evt["analysis"]["central4Asics"], msg="", name="Front detector - central 4 asics")
-                print  evt["analysis"]["assembled - " + clarge_key]
-                plotting.image.plotImage(evt["analysis"]["assembled - " + clarge_key], msg="", name="Front detector - assmebled central 4 asics")
-
-        # Plot bad hits
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2)
-
+                        # Front detector image of good hit
+                        plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Cspad large (full): Correct particle size", vmin=vmin_clarge, vmax=vmax_clarge)       
         
-        
-
-        #plotting.image.plotImage(evt[clarge_type][clarge_key])
-
     # ----------------- #
     # FINAL DIAGNOSTICS #
     # ----------------- #
