@@ -22,7 +22,7 @@ import diagnostics
 # From file
 do_testing     = True
 # Lots of ouput
-do_diagnostics = True
+do_diagnostics = False
 # Sizing
 do_sizing      = False
 # Running from shared memory
@@ -236,10 +236,9 @@ def onEvent(evt):
         hit_msg = ""
 
         # Injector position
-        x = evt["parameter"][injector_x_key]
-        y = evt["parameter"][injector_y_key]
-        z = evt["parameter"][injector_z_key]
-        print "Injector",x,y,z
+        x = evt["parameters"][injector_x_key]
+        y = evt["parameters"][injector_y_key]
+        z = evt["parameters"][injector_z_key]
         plotting.line.plotHistory(x)
         plotting.line.plotHistory(y)
         plotting.line.plotHistory(z)
@@ -288,7 +287,6 @@ def onEvent(evt):
         # Plot the glorious shots
         # image
         #plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2)
-        print "BLA"
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, mask=mask_c2x2)#, name="Image")
         plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], hmin=-49, hmax=50, bins=100, label='', density=False, history=100)
  
