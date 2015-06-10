@@ -30,21 +30,23 @@ do_online      = False
 # Make sure to run online on cxiopr
 do_autoonline  = True
 # Front detector activated
-do_front       = True
+do_front       = False
 
 # ---------------------------------------------------------
 # P S A N A
 # ---------------------------------------------------------
 
-# NOW
 experiment = "cxi86715"
-# OLD
-#experiment = "cxi86415"
 
 state = {
     'Facility':        'LCLS',
     'LCLS/PsanaConf':  ('psana_%s.cfg' % experiment),
 }
+
+if do_front:
+    state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
+else:
+    state['LCLS/PsanaConf'] = 'psana_cfg/cspad2x2.cfg'
 
 cxiopr = False
 if do_autoonline:
@@ -65,25 +67,13 @@ if do_online:
 # CSPAD 2x2
 # ---------
 
-c2x2_ids = {
-    'cxi86415': 'Dg3',
-    'cxi86715': 'Dg2',
-}
-c2x2_id = c2x2_ids[experiment]
-
 c2x2_type = "image"
-c2x2_key  = "CsPad %s[image]" % c2x2_id
+c2x2_key  = "CsPad Dg2[image]"
 
 # CSPAD large
 
-clarge_ids = {
-    'cxi86415': 'Ds2',
-    'cxi86715': 'Ds2',
-}
-clarge_id = clarge_ids[experiment]
-
 clarge_type = "photons"
-clarge_key  = "CsPad %s[photons]" % clarge_id
+clarge_key  = "CsPad Ds2[photons]"
 #clarge_type = "calibrated"
 #clarge_key  = "CsPad %s[calibrated]" % clarge_id
 
