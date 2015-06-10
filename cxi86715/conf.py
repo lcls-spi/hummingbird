@@ -29,7 +29,7 @@ do_online      = False
 # Make sure to run online on cxiopr
 do_autoonline  = True
 # Front detector activated
-do_front       = True
+do_front       = False
 
 # ---------------------------------------------------------
 # P S A N A
@@ -188,7 +188,6 @@ def onEvent(evt):
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
         analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.assemble(evt, clarge_type, clarge_key, x=x_front, y=y_front, nx=400, ny=400, subset=map(lambda i : (i * 8 + 1) * 2, xrange(4)))
-        print evt["analysis"]["assembled - "+clarge_key].data.max()
 
     if not hit or bgall:
         print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
@@ -231,8 +230,10 @@ def onEvent(evt):
 
     if not hit:
         
-        plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
+
+        if do_front:
+            plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
     
     if hit:
 
@@ -245,15 +246,23 @@ def onEvent(evt):
         plotting.line.plotHistory(z)
         # Plot MeanMap of hitrate(x,y)
         plotting.correlation.plotMeanMap(x, y, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
-        
+
+        # Image of hit
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2")
+        if do_front:
+            # Front detector image (central 4 asics) of hit
+            plotting.image.plotImage(evt["analysis"]["assembled - " + clarge_key], msg="", name="Cspad large (central 4 asics): Hits")
+            #plotting.image.plotImage(evt[clarge_type][clarge_key])
+
         if do_sizing:
+
+            # Image of fit
+            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Radial sphere fit result")
             
             # Plot measurement radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)
             # Plot fit radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
-            # Plot fit image
-            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Radial sphere fit result")
             # Fit error history
             plotting.line.plotHistory(evt["analysis"]["fit error"])
 
@@ -271,26 +280,13 @@ def onEvent(evt):
 
                     # Diameter vs. intensity scatter plot
                     plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
-                    # Plot image of good hit
-                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Correct size")
+                    # Image of good hit
+                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Cspad 2x2: Correct particle size")
                     
                     if do_front:
-                        plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Correct size")
-
-        else:
-            if do_front:
-                plotting.image.plotImage(evt["analysis"]["central4Asics"], msg="", name="Front detector - central 4 asics")
-                print  evt["analysis"]["assembled - " + clarge_key]
-                plotting.image.plotImage(evt["analysis"]["assembled - " + clarge_key], msg="", name="Front detector - assmebled central 4 asics")
-
-        # Plot bad hits
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2)
-
+                        # Front detector image of good hit
+                        plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Cspad large (full): Correct particle size")       
         
-        
-
-        #plotting.image.plotImage(evt[clarge_type][clarge_key])
-
     # ----------------- #
     # FINAL DIAGNOSTICS #
     # ----------------- #
