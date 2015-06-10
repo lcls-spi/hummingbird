@@ -186,7 +186,7 @@ def onEvent(evt):
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
         bg.write(evt,directory=bg_dir,interval=fbg)
-    if:
+    if hit:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
         if do_sizing:
