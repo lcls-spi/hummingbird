@@ -21,15 +21,15 @@ import diagnostics
 # -----
 
 # Lots of ouput
-do_diagnostics = False
+do_diagnostics    = False
 # Sizing
-do_sizing      = False
+do_sizing         = False
 # Running from shared memory
-do_online      = False
+do_online         = False
 # Make sure to run online on cxiopr
-do_autoonline  = True
+do_autoonline     = True
 # Front detector activated
-do_front       = True
+do_front          = True
 # Do assembly of the front
 do_assemble_front = False
 
@@ -125,7 +125,6 @@ G_front = utils.reader.GeometryReader(this_dir + "/geometry/geometry_front.h5", 
 x_front = numpy.array(utils.array.cheetahToSlacH5(G_front.x), dtype="int")
 y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 
-
 # Background
 # ----------
 
@@ -186,11 +185,12 @@ def onEvent(evt):
     # Count photons in different detector regions
     analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=1, aduThreshold=0.5)
     if do_front:
-        analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
-        analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
         if do_assemble_front:
             analysis.pixel_detector.assemble(evt, clarge_type, clarge_key, x=x_front, y=y_front, nx=400, ny=400, subset=map(lambda i : (i * 8 + 1) * 2, xrange(4)))
+        analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
+        analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
+
         
     if not hit or bgall:
         print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
