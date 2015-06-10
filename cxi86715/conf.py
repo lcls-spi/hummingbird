@@ -19,7 +19,7 @@ import diagnostics
 # Flags
 # -----
 
-do_testing     = True
+do_testing     = False
 do_diagnostics = False
 do_sizing      = False
 do_online      = False
@@ -41,9 +41,9 @@ if do_autoonline:
         do_testing = False
 
 if do_testing:
-    state['LCLS/DataSource'] = 'exp=cxi86415:run=1:xtc'
+    state['LCLS/DataSource'] = 'exp=cxi86415:run=25:xtc'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run='
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
 
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0'
@@ -144,6 +144,11 @@ def onEvent(evt):
     
     # HIT FINDING
     # Simple hit finding by counting lit pixels
+    print evt.keys()
+    print evt.native_keys()
+    print evt["ionTOFs"].keys()
+    analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
+    
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key].data
 
