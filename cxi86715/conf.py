@@ -19,8 +19,6 @@ import diagnostics
 # Flags
 # -----
 
-# From file
-do_testing     = False
 # Lots of ouput
 do_diagnostics = False
 # Sizing
@@ -36,14 +34,8 @@ do_front       = True
 # P S A N A
 # ---------------------------------------------------------
 
-# NOW
-experiment = "cxi86715"
-# OLD
-#experiment = "cxi86415"
-
 state = {
     'Facility':        'LCLS',
-    'LCLS/PsanaConf':  ('psana_%s.cfg' % experiment),
 }
 
 cxiopr = False
@@ -51,39 +43,28 @@ if do_autoonline:
     import getpass
     if getpass.getuser() == "cxiopr":
         do_online  = True
-        do_testing = False
         cxiopr     = True
-
-if do_testing:
-    state['LCLS/DataSource'] = 'exp=cxi86415:run=25:xtc'
-else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
 
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0'
+else:
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
+
+if do_front:
+    state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
+else:
+    state['LCLS/PsanaConf'] = 'psana_cfg/cspad2x2.cfg'
 
 # CSPAD 2x2
 # ---------
 
-c2x2_ids = {
-    'cxi86415': 'Dg3',
-    'cxi86715': 'Dg2',
-}
-c2x2_id = c2x2_ids[experiment]
-
 c2x2_type = "image"
-c2x2_key  = "CsPad %s[image]" % c2x2_id
+c2x2_key  = "CsPad Dg2[image]"
 
 # CSPAD large
 
-clarge_ids = {
-    'cxi86415': 'Ds2',
-    'cxi86715': 'Ds2',
-}
-clarge_id = clarge_ids[experiment]
-
 clarge_type = "photons"
-clarge_key  = "CsPad %s[photons]" % clarge_id
+clarge_key  = "CsPad Ds2[photons]"
 #clarge_type = "calibrated"
 #clarge_key  = "CsPad %s[calibrated]" % clarge_id
 
@@ -137,8 +118,9 @@ mask_c2x2 = M_back.boolean_mask
 # Background
 # ----------
 
-Nbg = 100
-fbg = 100
+bgall = False
+Nbg   = 1000
+fbg   = 10000
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
@@ -195,16 +177,16 @@ def onEvent(evt):
     if do_front:
         analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
-        # Count photons in ascis
+        analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
 
-    if not hit:
-        print "MISS (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+    if not hit or bgall:
+        print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
         bg.write(evt,directory=bg_dir,interval=fbg)
-    else:
+    if hit:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
         if do_sizing:
@@ -237,9 +219,10 @@ def onEvent(evt):
 
     if not hit:
         
-        pass
+        plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
+        plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
     
-    else:
+    if hit:
 
         # Injector position
         x = evt["parameters"][injector_x_key]
@@ -279,11 +262,18 @@ def onEvent(evt):
                     # Plot image of good hit
                     plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Correct size")
                     
-                    if front:
+                    if do_front:
                         plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Correct size")
+
+        else:
+            if do_front:
+                plotting.image.plotImage(evt["analysis"]["central4Asics"], msg="", name="Front detector - central 4 asics")
 
         # Plot bad hits
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2)
+
+        
+        
 
         #plotting.image.plotImage(evt[clarge_type][clarge_key])
 
