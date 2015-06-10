@@ -135,8 +135,8 @@ mask_c2x2 = M_back.boolean_mask
 # Background
 # ----------
 
-Nbg = 1000
-fbg = 10000
+Nbg = 100
+fbg = 100
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
 bg_dir = this_dir + "/stack"
 
@@ -187,7 +187,8 @@ def onEvent(evt):
     if do_front:
         analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
-        
+        # Count photons in ascis
+
     if not hit:
         print "MISS (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
@@ -197,6 +198,7 @@ def onEvent(evt):
         bg.write(evt,directory=bg_dir,interval=fbg)
     else:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+        good_hit = False
         if do_sizing:
             # RADIAL SPHERE FIT
             # Find the center of diffraction
@@ -214,8 +216,6 @@ def onEvent(evt):
             if fit_succeeded:
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
-            else:
-                good_hit = False
                
     # ------------------------ #
     # SEND RESULT TO INTERFACE #
@@ -232,8 +232,6 @@ def onEvent(evt):
         pass
     
     else:
-
-        hit_msg = ""
 
         # Injector position
         x = evt["parameters"][injector_x_key]
@@ -253,7 +251,6 @@ def onEvent(evt):
             plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
             # Plot fit image
             plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Radial sphere fit result")
-
             # Fit error history
             plotting.line.plotHistory(evt["analysis"]["fit error"])
 
@@ -263,34 +260,24 @@ def onEvent(evt):
                 plotting.line.plotHistory(evt["analysis"]["offCenterX"])
                 plotting.line.plotHistory(evt["analysis"]["offCenterY"])
                 plotting.line.plotHistory(evt["analysis"]["diameter"], runningHistogram=True)
-                plotting.line.plotHistory(evt["analysis"]["intensity"])
-
-                ### NEED CONF ->
-                #x = evt["parameters"]["injector_x"]
-                #y = evt["parameters"]["injector_y"]
-                #z = evt["analysis"]["diameter"]
-                #plotting.correlation.plotMeanMap(x,y,z, plotid='DiameterMeanMap', **diameterMeanMapParams)
-                #x = evt["parameters"]["injector_x"]
-                #y = evt["parameters"]["injector_y"]
-                #z = evt["analysis"]["intensity"]
-                #plotting.correlation.plotMeanMap(x,y,z, plotid='IntensityMeanMap', **intensityMeanMapParams)
-                ### <- NEED CONF
+                plotting.line.plotHistory(evt["analysis"]["intensity"], runningHistogram=True)
+                plotting.correlation.plotMeanMap(x,y,evt["analysis"]["diameter"].data, plotid='DiameterMeanMap', **diameterMeanMapParams)
+                plotting.correlation.plotMeanMap(x,y,evt["analysis"]["intensity"].data, plotid='IntensityMeanMap', **intensityMeanMapParams)
                         
                 if good_hit:
 
                     # Diameter vs. intensity scatter plot
                     plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
                     # Plot image of good hit
-                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2, name="Good hit")
+                    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Correct size")
+                    
+                    if front:
+                        plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Correct size")
 
-        
-        # Plot the glorious shots
-        # image
-        #plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, log=True, mask=mask_c2x2)
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg=hit_msg, mask=mask_c2x2)#, name="Image")
-        plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], hmin=-49, hmax=50, bins=100, label='', density=False, history=100)
- 
-        plotting.image.plotImage(evt[clarge_type][clarge_key])
+        # Plot bad hits
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2)
+
+        #plotting.image.plotImage(evt[clarge_type][clarge_key])
 
     # ----------------- #
     # FINAL DIAGNOSTICS #
