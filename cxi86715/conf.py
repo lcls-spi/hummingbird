@@ -118,8 +118,9 @@ mask_c2x2 = M_back.boolean_mask
 # Background
 # ----------
 
-Nbg = 100
-fbg = 100
+bgall = False
+Nbg   = 1000
+fbg   = 10000
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
@@ -178,14 +179,14 @@ def onEvent(evt):
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
         # Count photons in ascis
 
-    if not hit:
+    if not hit or bgall:
         print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
         bg.write(evt,directory=bg_dir,interval=fbg)
-    else:
+    if:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
         if do_sizing:
