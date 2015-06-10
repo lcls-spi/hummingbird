@@ -29,7 +29,9 @@ do_online      = False
 # Make sure to run online on cxiopr
 do_autoonline  = True
 # Front detector activated
-do_front       = False
+do_front       = True
+# Do assembly of the front
+do_assemble_front = False
 
 # ---------------------------------------------------------
 # P S A N A
@@ -187,8 +189,9 @@ def onEvent(evt):
         analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
         analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
-        analysis.pixel_detector.assemble(evt, clarge_type, clarge_key, x=x_front, y=y_front, nx=400, ny=400, subset=map(lambda i : (i * 8 + 1) * 2, xrange(4)))
-
+        if do_assemble_front:
+            analysis.pixel_detector.assemble(evt, clarge_type, clarge_key, x=x_front, y=y_front, nx=400, ny=400, subset=map(lambda i : (i * 8 + 1) * 2, xrange(4)))
+        
     if not hit or bgall:
         print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
@@ -251,8 +254,10 @@ def onEvent(evt):
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2")
         if do_front:
             # Front detector image (central 4 asics) of hit
-            plotting.image.plotImage(evt["analysis"]["assembled - " + clarge_key], msg="", name="Cspad large (central 4 asics): Hits")
             #plotting.image.plotImage(evt[clarge_type][clarge_key])
+            plotting.image.plotImage(evt["analysis"]["central4Asics"])
+            if do_assemble_front:
+                plotting.image.plotImage(evt["analysis"]["assembled - " + clarge_key], msg="", name="Cspad large (central 4 asics): Hits")
 
         if do_sizing:
 
