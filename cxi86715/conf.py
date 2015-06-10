@@ -188,7 +188,7 @@ def onEvent(evt):
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
         analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.assemble(evt, clarge_type, clarge_key, x=x_front, y=y_front, nx=400, ny=400, subset=map(lambda i : (i * 8 + 1) * 2, xrange(4)))
-        print evt["analysis"]["assembled - "+clarge_key].data.shape
+        print evt["analysis"]["assembled - "+clarge_key].data.max()
 
     if not hit or bgall:
         print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
