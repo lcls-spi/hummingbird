@@ -171,6 +171,11 @@ def onEvent(evt):
 
     # Time measurement
     analysis.event.printProcessingRate()
+
+    # Send Fiducials and Timestamp
+    print evt["eventID"]["Timestamp"].fiducials
+    print evt["eventID"]["Timestamp"].lcls_time
+    plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
     
     # Spit out a lot for debugging
     if do_diagnostics: diagnostics.initial_diagnostics(evt)
