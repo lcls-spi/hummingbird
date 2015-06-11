@@ -237,6 +237,11 @@ def onEvent(evt):
     # Keep hitscore history
     plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
 
+    # PHOTON COUNTING
+    # Keep history of number of photons on the back
+    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
+
+
     # Injector position
     x = evt["parameters"][injector_x_key]
     y = evt["parameters"][injector_y_key]
