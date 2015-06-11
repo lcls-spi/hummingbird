@@ -196,7 +196,7 @@ def onEvent(evt):
 
         
     if not hit or bgall:
-        print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+        # print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
@@ -229,7 +229,7 @@ def onEvent(evt):
     # ------------------------ #
 
     # Pulse Energy
-    plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
+    # plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
     
     # HITFINDING
     # Keep hit history for hitrate plots
