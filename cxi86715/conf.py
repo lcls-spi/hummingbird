@@ -96,7 +96,7 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 # -----------
 aduThreshold      = 20
 #aduThreshold      = 10
-hitscoreThreshold = 500
+hitscoreThreshold = 200
 #hitscoreThreshold = 200
 
 # Sizing
@@ -270,12 +270,17 @@ def onEvent(evt):
     if do_front:
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
 
-    if hit or do_showall:
+    if do_showall:
+        
+        # Image of back detector for all events
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: All", vmin=vmin_c2x2, vmax=vmax_c2x2)
+        # Histogram of detector for all events
+        plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], mask=mask_c2x2, hmin=-100, hmax=100, bins=200, label='Cspad 2x2 pixel value [ADU]')
+        
+    if hit:
         
         # Image of hit
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2)
-    
-    if hit:
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2)      
 
         # Plot MeanMap of hitrate(y,z)
         plotting.correlation.plotMeanMap(y, z, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
