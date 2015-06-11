@@ -122,7 +122,7 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 bgall = False
 Nbg   = 1000
 fbg   = 10000
-bg = analysis.stack.Stack(name="bg",maxLen=Nbg)
+bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg,randStart=True)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
 else:
@@ -201,7 +201,7 @@ def onEvent(evt):
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
-        bg.write(evt,directory=bg_dir,interval=fbg)
+        bg.write(evt,directory=bg_dir)
     if hit:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
