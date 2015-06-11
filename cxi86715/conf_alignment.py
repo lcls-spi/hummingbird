@@ -21,12 +21,15 @@ import diagnostics
 # ---------------------------------------------------------
 state = {}
 state['Facility'] = 'LCLS'
-do_diagnostics    = False
+state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
+
 import getpass
 if getpass.getuser() == "cxiopr":
     state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=17'
+
+do_diagnostics = False
 
 # CSPAD 2x2
 # ---------
@@ -40,8 +43,10 @@ clarge_key  = "CsPad Ds2[%s]" % clarge_type
 
 # ALIGMENT MOTORS
 # ---------------
-alignment_x_key = "CXI:SC2:MZM:01"
-alignment_y_key = "CXI:SC2:MZM:02"
+ap1_x_key = "ap1_x"
+ap1_y_key = "ap1_y"
+ap2_x_key = "ap2_x"
+ap2_y_key = "ap2_y"
 
 # Mask
 # ----
@@ -49,6 +54,16 @@ M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data"
 mask_c2x2 = M_back.boolean_mask
 (ny_c2x2,nx_c2x2) = mask_c2x2.shape
 
+# Plotting
+# --------
+meanMapParams = {
+    'xmin':  -1000,
+    'xmax':  1000,
+    'ymin':  -1000,
+    'xmax':  1000,
+    'xbins': 100,
+    'ybins': 100
+    }
 # ---------------------------------------------------------
 # E V E N T   C A L L
 # ---------------------------------------------------------
@@ -75,8 +90,8 @@ def onEvent(evt):
     # AVERAGE PULSE ENERGY
     analysis.beamline.averagePulseEnergy(evt, "pulseEnergies")
 
-    # CENTRAL ASICS OF FRONT DETECTOR
-    analysis.pixel_detector.getCentral4Asics(evt, clarge_key, clarge_type)
+    # CENTRAL ASICS OF FRONT DETECTOR 
+    analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
 
     # COUNT PHOTONS
     analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
@@ -89,23 +104,32 @@ def onEvent(evt):
     # Pulse Energy
     plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
     
-    # Aperture position
-    x = evt["parameters"][aperture_x_key]
-    y = evt["parameters"][aperture_y_key]
-    plotting.line.plotHistory(x)
-    plotting.line.plotHistory(y)
-
-    # Nr. of photons 
-    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
-    plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
-     
+    # Aperture 1 position
+    x = evt["parameters"][ap1_x_key]
+    y = evt["parameters"][ap1_y_key]
+    plotting.line.plotHistory(x, label='Position in X')
+    plotting.line.plotHistory(y, label='Position in Y')
 
     # Plot MeanMap of Nr. of photons (x,y)
     heat = evt["analysis"]["nrPhotons - " + c2x2_key].data
     plotting.correlation.plotMeanMap(x,y, heat, plotid='meanMap', **meanMapParams)
 
+    # Aperture 2 position
+    x = evt["parameters"][ap2_x_key]
+    y = evt["parameters"][ap2_y_key]
+    plotting.line.plotHistory(x, label='Position in X')
+    plotting.line.plotHistory(y, label='Position in Y')
+
+    # Plot MeanMap of Nr. of photons (x,y)
+    heat = evt["analysis"]["nrPhotons - " + c2x2_key].data
+    plotting.correlation.plotMeanMap(x,y, heat, plotid='meanMap', **meanMapParams)
+
+    # Nr. of photons 
+    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
+    plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
+     
     # Image of back
-    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 140k", vmin=vmin_c2x2, vmax=vmax_c2x2)
+    plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 140k", vmin=0, vmax=200)
         
     # ----------------- #
     # FINAL DIAGNOSTICS #
