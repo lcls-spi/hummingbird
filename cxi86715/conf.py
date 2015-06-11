@@ -49,7 +49,7 @@ if do_autoonline:
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=18'
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
@@ -120,8 +120,8 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 # Background
 # ----------
 bgall = False
-Nbg   = 1000
-fbg   = 10000
+Nbg   = 100
+fbg   = 100
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
@@ -160,8 +160,6 @@ def onEvent(evt):
     # ------------------- #
     # INITIAL DIAGNOSTICS #
     # ------------------- #
-
-    print "PHOTONS", evt["photons"]
 
     # Time measurement
     analysis.event.printProcessingRate()
