@@ -161,8 +161,6 @@ def onEvent(evt):
     # INITIAL DIAGNOSTICS #
     # ------------------- #
 
-    print "PHOTONS", evt["photons"]
-
     # Time measurement
     analysis.event.printProcessingRate()
 
