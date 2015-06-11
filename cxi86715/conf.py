@@ -32,6 +32,8 @@ do_autoonline     = True
 do_front          = True
 # Do assembly of the front
 do_assemble_front = False
+# Send the 2x2 images all events to the frontend
+do_showall        = True
 
 # ---------------------------------------------------------
 # P S A N A
@@ -49,7 +51,7 @@ if do_autoonline:
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=18'
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
@@ -77,15 +79,35 @@ injector_z_key = "CXI:PI2:MMS:03.RBV"
 # P A R A M E T E R S
 # ---------------------------------------------------------
 
+# Mask
+# ----
+M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
+mask_c2x2 = M_back.boolean_mask
+(ny_c2x2,nx_c2x2) = mask_c2x2.shape
+
+# Geometry
+# --------
+pixel_size = 110E-6
+G_front = utils.reader.GeometryReader(this_dir + "/geometry/geometry_front.h5", pixel_size=110.E-6)
+x_front = numpy.array(utils.array.cheetahToSlacH5(G_front.x), dtype="int")
+y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
+
 # Hit finding
 # -----------
 aduThreshold      = 20
 #aduThreshold      = 10
-hitscoreThreshold = 10000
+hitscoreThreshold = 500
 #hitscoreThreshold = 200
 
 # Sizing
 # ------
+centerParams = {
+    'x0'       : 256 - (nx_c2x2-1)/2.,
+    'y0'       : 217 - (ny_c2x2-1)/2.,
+    'maxshift' : 20,
+    'threshold': 0.5,
+    'blur'     : 4,
+}
 modelParams = {
     'wavelength':0.12398,
     'pixelsize':110,
@@ -104,24 +126,11 @@ fit_error_threshold  = 1.
 diameter_expected    = 70
 diameter_error_max   = 30
 
-# Mask
-# ----
-M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
-mask_c2x2 = M_back.boolean_mask
-(ny_c2x2,nx_c2x2) = mask_c2x2.shape
-
-# Geometry
-# --------
-pixel_size = 110E-6
-G_front = utils.reader.GeometryReader(this_dir + "/geometry/geometry_front.h5", pixel_size=110.E-6)
-x_front = numpy.array(utils.array.cheetahToSlacH5(G_front.x), dtype="int")
-y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
-
 # Background
 # ----------
 bgall = False
-Nbg   = 1000
-fbg   = 10000
+Nbg   = 100
+fbg   = 100
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
@@ -160,8 +169,6 @@ def onEvent(evt):
     # ------------------- #
     # INITIAL DIAGNOSTICS #
     # ------------------- #
-
-    print "PHOTONS", evt["photons"]
 
     # Time measurement
     analysis.event.printProcessingRate()
@@ -210,7 +217,7 @@ def onEvent(evt):
         if do_sizing:
             # RADIAL SPHERE FIT
             # Find the center of diffraction
-            analysis.sizing.findCenter(evt, c2x2_type, c2x2_key, mask=mask_c2x2, maxshift=20, threshold=0.5, blur=4)
+            analysis.sizing.findCenter(evt, c2x2_type, c2x2_key, mask=mask_c2x2, **centerParams)
             # Calculate radial average
             analysis.pixel_detector.radial(evt, c2x2_type, c2x2_key, mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
             # Fitting sphere model to get size and intensity
@@ -260,14 +267,17 @@ def onEvent(evt):
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=0, hmax=100000, bins=100, window=100, history=1000)
     if do_front:
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
+
+    if hit or do_showall:
+        
+        # Image of hit
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2)
     
     if hit:
 
         # Plot MeanMap of hitrate(y,z)
         plotting.correlation.plotMeanMap(y, z, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
 
-        # Image of hit
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2)
         if do_front:
             # Front detector image (central 4 asics) of hit
             #plotting.image.plotImage(evt[clarge_type][clarge_key])
