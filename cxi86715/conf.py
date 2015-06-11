@@ -172,6 +172,7 @@ def onEvent(evt):
 
     # Time measurement
     analysis.event.printProcessingRate()
+    #analysis.event.printID(evt["eventID"])
 
     # Send Fiducials and Timestamp
     plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
@@ -182,6 +183,7 @@ def onEvent(evt):
     # -------- #
     # ANALYSIS #
     # -------- #
+    #print evt.native_keys()
 
     # AVERAGE PULSE ENERGY
     analysis.beamline.averagePulseEnergy(evt, "pulseEnergies")
