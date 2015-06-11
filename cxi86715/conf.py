@@ -161,6 +161,8 @@ def onEvent(evt):
     # INITIAL DIAGNOSTICS #
     # ------------------- #
 
+    print "PHOTONS", evt["photons"]
+
     # Time measurement
     analysis.event.printProcessingRate()
 
@@ -196,7 +198,7 @@ def onEvent(evt):
 
         
     if not hit or bgall:
-        print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+        # print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
@@ -229,13 +231,18 @@ def onEvent(evt):
     # ------------------------ #
 
     # Pulse Energy
-    plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
+    # plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
     
     # HITFINDING
     # Keep hit history for hitrate plots
     plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key])
     # Keep hitscore history
     plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
+
+    # PHOTON COUNTING
+    # Keep history of number of photons on the back
+    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
+
 
     # Injector position
     x = evt["parameters"][injector_x_key]
@@ -250,6 +257,7 @@ def onEvent(evt):
 
     # Nr. of photons 
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
+    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=0, hmax=100000, bins=100, window=100, history=1000)
     if do_front:
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
     
