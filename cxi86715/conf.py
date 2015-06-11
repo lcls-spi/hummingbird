@@ -161,6 +161,8 @@ def onEvent(evt):
     # INITIAL DIAGNOSTICS #
     # ------------------- #
 
+    print "PHOTONS", evt["photons"]
+
     # Time measurement
     analysis.event.printProcessingRate()
 
@@ -255,6 +257,7 @@ def onEvent(evt):
 
     # Nr. of photons 
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
+    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=0, hmax=100000, bins=100, window=100, history=1000)
     if do_front:
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
     
