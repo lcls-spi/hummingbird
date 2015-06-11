@@ -234,7 +234,7 @@ def onEvent(evt):
     # Keep hit history for hitrate plots
     plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key])
     # Keep hitscore history
-    plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key])
+    plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
 
     if not hit:
         
@@ -256,7 +256,7 @@ def onEvent(evt):
         plotting.correlation.plotMeanMap(x, y, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
 
         # Image of hit
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2", name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2)
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2)
         if do_front:
             # Front detector image (central 4 asics) of hit
             #plotting.image.plotImage(evt[clarge_type][clarge_key])
