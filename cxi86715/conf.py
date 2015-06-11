@@ -36,10 +36,8 @@ do_assemble_front = False
 # ---------------------------------------------------------
 # P S A N A
 # ---------------------------------------------------------
-
-state = {
-    'Facility':        'LCLS',
-}
+state = {}
+state['Facility'] = 'LCLS'
 
 cxiopr = False
 if do_autoonline:
@@ -49,7 +47,7 @@ if do_autoonline:
         cxiopr     = True
 
 if do_online:
-    state['LCLS/DataSource'] = 'shmem=psana.0'
+    state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
     state['LCLS/DataSource'] = 'exp=cxi86715:run=14'
 
@@ -60,18 +58,17 @@ else:
 
 # CSPAD 2x2
 # ---------
-
 c2x2_type = "image"
 c2x2_key  = "CsPad Dg2[image]"
 
 # CSPAD large
-
+# -----------
 clarge_type = "photons"
 #clarge_type = "calibrated"
 clarge_key  = "CsPad Ds2[%s]" % clarge_type
 
 # INJECTOR MOTORS
-
+# ---------------
 injector_x_key = "CXI:PI2:MMS:01.RBV"
 injector_y_key = "CXI:PI2:MMS:02.RBV"
 injector_z_key = "CXI:PI2:MMS:03.RBV"
@@ -82,15 +79,13 @@ injector_z_key = "CXI:PI2:MMS:03.RBV"
 
 # Hit finding
 # -----------
-
-#aduThreshold      = 20
-aduThreshold      = 10
-hitscoreThreshold = 1500
+aduThreshold      = 20
+#aduThreshold      = 10
+hitscoreThreshold = 10000
 #hitscoreThreshold = 200
 
 # Sizing
 # ------
-
 modelParams = {
     'wavelength':0.12398,
     'pixelsize':110,
@@ -105,21 +100,18 @@ sizingParams = {
 
 # Classification
 # --------------
-
 fit_error_threshold  = 1.
 diameter_expected    = 70
 diameter_error_max   = 30
 
 # Mask
 # ----
-
 M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
 mask_c2x2 = M_back.boolean_mask
 (ny_c2x2,nx_c2x2) = mask_c2x2.shape
 
 # Geometry
 # --------
-
 pixel_size = 110E-6
 G_front = utils.reader.GeometryReader(this_dir + "/geometry/geometry_front.h5", pixel_size=110.E-6)
 x_front = numpy.array(utils.array.cheetahToSlacH5(G_front.x), dtype="int")
@@ -127,7 +119,6 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 
 # Background
 # ----------
-
 bgall = False
 Nbg   = 1000
 fbg   = 10000
@@ -139,7 +130,6 @@ else:
 
 # Plotting
 # --------
-
 # Radial averages
 radial_tracelen = 100
 
@@ -151,6 +141,8 @@ hitrateMeanMapParams = {
     'ymax': +1000,
     'xbins': 10,
     'ybins': 10,
+    'xlabel': 'Injector Position in y',
+    'ylabel': 'Injector Position in z'  
 }
 
 # Image
@@ -171,6 +163,9 @@ def onEvent(evt):
 
     # Time measurement
     analysis.event.printProcessingRate()
+
+    # Send Fiducials and Timestamp
+    plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
     
     # Spit out a lot for debugging
     if do_diagnostics: diagnostics.initial_diagnostics(evt)
@@ -178,6 +173,9 @@ def onEvent(evt):
     # -------- #
     # ANALYSIS #
     # -------- #
+
+    # AVERAGE PULSE ENERGY
+    analysis.beamline.averagePulseEnergy(evt, "pulseEnergies")
     
     # HIT FINDING
     #analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
@@ -230,30 +228,35 @@ def onEvent(evt):
     # SEND RESULT TO INTERFACE #
     # ------------------------ #
 
+    # Pulse Energy
+    plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
+    
     # HITFINDING
     # Keep hit history for hitrate plots
     plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key])
     # Keep hitscore history
     plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
 
-    if not hit:
-        
-        plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
+    # Injector position
+    x = evt["parameters"][injector_x_key]
+    y = evt["parameters"][injector_y_key]
+    z = evt["parameters"][injector_z_key]
+    plotting.line.plotHistory(x)
+    plotting.line.plotHistory(y)
+    plotting.line.plotHistory(z)
 
-        if do_front:
-            plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
+    # ToF
+    plotting.line.plotTrace(evt["ionTOFs"]["Acqiris 0 Channel 0"]) 
+
+    # Nr. of photons 
+    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
+    if do_front:
+        plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
     
     if hit:
 
-        # Injector position
-        x = evt["parameters"][injector_x_key]
-        y = evt["parameters"][injector_y_key]
-        z = evt["parameters"][injector_z_key]
-        plotting.line.plotHistory(x)
-        plotting.line.plotHistory(y)
-        plotting.line.plotHistory(z)
-        # Plot MeanMap of hitrate(x,y)
-        plotting.correlation.plotMeanMap(x, y, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
+        # Plot MeanMap of hitrate(y,z)
+        plotting.correlation.plotMeanMap(y, z, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
 
         # Image of hit
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2)
