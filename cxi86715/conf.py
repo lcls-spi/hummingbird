@@ -122,7 +122,7 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 bgall = False
 Nbg   = 1000
 fbg   = 10000
-bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg,randStart=True)
+bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
 else:
