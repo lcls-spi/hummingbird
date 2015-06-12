@@ -36,7 +36,7 @@ do_assemble_front = False
 # Send the 2x2 images all events to the frontend
 do_showall        = False
 # Particle camera
-do_camera         = True
+do_camera         = False
 
 # ---------------------------------------------------------
 # P S A N A
@@ -321,7 +321,7 @@ def onEvent(evt):
 
     # Send stuf from particle stream
     if doing_camera:
-        plotting.line.plotHistogram(evt["analysis"]["particlestream"], log10=True, hmin=1, hmax=8, bins=100)
+        plotting.line.plotHistogram(evt["analysis"]["particlestream"], log10=True, hmin=1, hmax=8, bins=1000)
         plotting.image.plotImage(evt["image"]["Sc2Questar[image]"], msg="")
         plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
@@ -390,7 +390,7 @@ def onEvent(evt):
         if do_sizing:
 
             # Image of fit
-            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Cspad 2x2: Fit result (radial sphere fit)", vmin=vmin_c2x2, vmax=vmax_c2x2, msg='Size = %.2f [nm]' %evt["analysis"]["diameter"].data)
+            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Cspad 2x2: Fit result (radial sphere fit)", vmin=vmin_c2x2, vmax=vmax_c2x2, msg='' %evt["analysis"]["diameter"].data)
             
             # Plot measurement radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key_s], evt["analysis"]["radial distance - "+c2x2_key_s],tracelen=radial_tracelen)
