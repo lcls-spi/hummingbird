@@ -33,7 +33,7 @@ do_front          = True
 # Do assembly of the front
 do_assemble_front = False
 # Send the 2x2 images all events to the frontend
-do_showall        = True
+do_showall        = False
 
 # ---------------------------------------------------------
 # P S A N A
@@ -97,7 +97,7 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 aduThreshold      = 20
 #aduThreshold      = 10
 #hitscoreThreshold = 250
-hitscoreThreshold = 1100
+hitscoreThreshold =  600
 #hitscoreThreshold = 400
 #hitscoreThreshold = 200
 
@@ -106,7 +106,7 @@ hitscoreThreshold = 1100
 centerParams = {
     'x0'       : 256 - (nx_c2x2-1)/2.,
     'y0'       : 217 - (ny_c2x2-1)/2.,
-    'maxshift' : 80,
+    'maxshift' : 50,
     'threshold': 0.5,
     'blur'     : 4,
 }
@@ -131,8 +131,8 @@ diameter_error_max   = 30
 # Background
 # ----------
 bgall = False
-Nbg   = 100
-fbg   = 100
+Nbg   = 1000
+fbg   = 10000
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
@@ -349,7 +349,7 @@ def onEvent(evt):
         if do_sizing:
 
             # Image of fit
-            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Cspad 2x2: Fit result (radial sphere fit)", vmin=vmin_c2x2, vmax=vmax_c2x2)
+            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Cspad 2x2: Fit result (radial sphere fit)", vmin=vmin_c2x2, vmax=vmax_c2x2, msg='Size = %.2f [nm]' %evt["analysis"]["diameter"].data)
             
             # Plot measurement radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)
