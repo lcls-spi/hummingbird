@@ -85,6 +85,8 @@ injector_z_key = "CXI:PI2:MMS:03.RBV"
 M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
 mask_c2x2 = M_back.boolean_mask
 (ny_c2x2,nx_c2x2) = mask_c2x2.shape
+M_beamstops = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
+beamstops_c2x2 = M_beamstops.boolean_mask
 
 # Geometry
 # --------
@@ -99,7 +101,7 @@ aduThreshold      = 20
 if do_online:
     hitscoreThreshold =  600
 else:
-    hitscoreThreshold =  600    
+    hitscoreThreshold =  0    
 
 # Sizing
 # ------
@@ -235,7 +237,7 @@ def onEvent(evt):
 
     # AVERAGE PULSE ENERGY
     analysis.beamline.averagePulseEnergy(evt, "pulseEnergies")
-    
+
     # HIT FINDING
     #analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
 
@@ -273,13 +275,17 @@ def onEvent(evt):
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
         if do_sizing:
+            # CMC
+            analysis.pixel_detector.cmc(evt, c2x2_type, c2x2_key, mask=beamstops_c2x2)
+            c2x2_type_s = "analysis"
+            c2x2_key_s = "cmc - " + c2x2_key
             # RADIAL SPHERE FIT
             # Find the center of diffraction
-            analysis.sizing.findCenter(evt, c2x2_type, c2x2_key, mask=mask_c2x2, **centerParams)
+            analysis.sizing.findCenter(evt, c2x2_type_s, c2x2_key_s, mask=mask_c2x2, **centerParams)
             # Calculate radial average
-            analysis.pixel_detector.radial(evt, c2x2_type, c2x2_key, mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
+            analysis.pixel_detector.radial(evt, c2x2_type_s, c2x2_key_s, mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
             # Fitting sphere model to get size and intensity
-            analysis.sizing.fitSphereRadial(evt, "analysis", "radial distance - " + c2x2_key, "radial average - " + c2x2_key, **dict(modelParams, **sizingParams))
+            analysis.sizing.fitSphereRadial(evt, "analysis", "radial distance - " + c2x2_key_s, "radial average - " + c2x2_key_s, **dict(modelParams, **sizingParams))
             # Calculate diffraction pattern from fit result 
             analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_c2x2,nx_c2x2), poisson=True, **modelParams)
             # Calculate radial average of diffraction pattern from fit result
@@ -365,7 +371,7 @@ def onEvent(evt):
             plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Cspad 2x2: Fit result (radial sphere fit)", vmin=vmin_c2x2, vmax=vmax_c2x2, msg='Size = %.2f [nm]' %evt["analysis"]["diameter"].data)
             
             # Plot measurement radial average
-            plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)
+            plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key_s], evt["analysis"]["radial distance - "+c2x2_key_s],tracelen=radial_tracelen)
             # Plot fit radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
             # Fit error history
