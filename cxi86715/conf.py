@@ -54,7 +54,7 @@ if do_autoonline:
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=49'
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=57'
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
@@ -369,7 +369,9 @@ def onEvent(evt):
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: All", vmin=vmin_c2x2, vmax=vmax_c2x2)
         # Histogram of detector for all events
         plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], mask=mask_c2x2, hmin=-100, hmax=100, bins=200, label='Cspad 2x2 pixel value [ADU]')
-        
+    plotting.correlation.plotMeanMap(evt["analysis"]["averagePulseEnergy"], evt["analysis"]["nrPhotons - central4Asics"], hit)
+    plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
+    
     if hit:
 
         # ToF
