@@ -6,6 +6,7 @@ import analysis.hitfinding
 import analysis.pixel_detector
 import analysis.stack
 import analysis.sizing
+import analysis.injection_camera
 import plotting.image
 import plotting.line
 import plotting.correlation
@@ -51,7 +52,7 @@ if do_autoonline:
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=18'
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=36'
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
@@ -193,6 +194,12 @@ def onEvent(evt):
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key].data
 
+    # CAMERA
+    doing_camera = False
+    if "camera" in evt.keys():        
+        analysis.injection_camera.getMaskedParticles(evt, "image", "ScQuestar2[image]", "maskedcamera")
+        doing_camera = True
+
     # COUNT PHOTONS
     # Count photons in different detector regions
     analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=1, aduThreshold=0.5)
@@ -267,6 +274,12 @@ def onEvent(evt):
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=0, hmax=100000, bins=100, window=100, history=1000)
     if do_front:
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
+
+    if doing_camera:
+        print "Doing camera"
+        print evt["image"]["ScQuestar2[image]"].data.shape
+        plotting.image.plotImage(evt["image"]["ScQuestar2[image]"], msg="", name="Raw Opal image")
+        #plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")
 
     if hit or do_showall:
         
