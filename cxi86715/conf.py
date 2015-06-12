@@ -35,6 +35,8 @@ do_front          = True
 do_assemble_front = False
 # Send the 2x2 images all events to the frontend
 do_showall        = False
+# Particle camera
+do_camera         = True
 
 # ---------------------------------------------------------
 # P S A N A
@@ -238,10 +240,10 @@ def onEvent(evt):
     # Time measurement
     analysis.event.printProcessingRate()
     #analysis.event.printID(evt["eventID"])
-    print evt.native_keys()
+    #print evt.native_keys()
 
     # Send Fiducials and Timestamp
-    plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
+    #plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
     
     # Spit out a lot for debugging
     if do_diagnostics: diagnostics.initial_diagnostics(evt)
@@ -264,10 +266,9 @@ def onEvent(evt):
 
     # CAMERA
     doing_camera = False
-    if False and "camera" in evt.keys():        
+    if do_camera and "Sc2Questar[image]" in evt["image"]:        
         analysis.injection_camera.getMaskedParticles(evt, "image", "Sc2Questar[image]", "maskedcamera", minX = 200, maxX = 1300, thresh = 30)
         analysis.injection_camera.countContours(evt, "image", "Sc2Questar[image]", "maskedcamera", "coloredmask", "particlestream")
-        print evt["analysis"]["particlestream"]
         doing_camera = True
 
     # COUNT PHOTONS
@@ -318,6 +319,12 @@ def onEvent(evt):
     # SEND RESULT TO INTERFACE #
     # ------------------------ #
 
+    # Send stuf from particle stream
+    if doing_camera:
+        plotting.line.plotHistogram(evt["analysis"]["particlestream"], log10=True, hmin=1, hmax=8, bins=100)
+        plotting.image.plotImage(evt["image"]["Sc2Questar[image]"], msg="")
+        plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
+
     # If not miss or hit, probably dark run -> do not send anything
     if not (miss or hit):
         return 
@@ -349,11 +356,6 @@ def onEvent(evt):
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=0, hmax=100000, bins=100, window=100, history=1000)
     if do_front:
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
-
-    if doing_camera:
-        print evt["analysis"]["particlestream"].data
-        plotting.image.plotImage(evt["image"]["Sc2Questar[image]"], msg="")
-        plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
     # Plot MeanMap of hitrate(y,z)
     plotting.correlation.plotMeanMap(x, z, hit, plotid='hitrateMeanMap', **hitrateMeanMapParams)
