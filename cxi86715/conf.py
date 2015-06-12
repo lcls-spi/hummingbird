@@ -247,7 +247,9 @@ def onEvent(evt):
     # CAMERA
     doing_camera = False
     if "camera" in evt.keys():        
-        analysis.injection_camera.getMaskedParticles(evt, "image", "ScQuestar2[image]", "maskedcamera")
+        analysis.injection_camera.getMaskedParticles(evt, "image", "ScQuestar2[image]", "maskedcamera", minX = 200, maxX = 1300, thresh = 30)
+        analysis.injection_camera.countContours(evt, "image", "ScQuestar2[image]", "maskedcamera", "coloredmask", "particlestream")
+        print evt["analysis"]["particlestream"]
         doing_camera = True
 
     # COUNT PHOTONS
@@ -323,10 +325,9 @@ def onEvent(evt):
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
 
     if doing_camera:
-        print "Doing camera"
-        print evt["image"]["ScQuestar2[image]"].data.shape
+        print evt["analysis"]["particlestream"].data
         plotting.image.plotImage(evt["image"]["ScQuestar2[image]"], msg="")
-        #plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")
+        plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
     # Plot MeanMap of hitrate(y,z)
     plotting.correlation.plotMeanMap(x, z, evt["analysis"]["hitscore - " + c2x2_key].data, plotid='hitscoreMeanMap', **hitscoreMeanMapParams)
