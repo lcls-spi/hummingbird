@@ -6,6 +6,7 @@ import analysis.hitfinding
 import analysis.pixel_detector
 import analysis.stack
 import analysis.sizing
+import analysis.injection_camera
 import plotting.image
 import plotting.line
 import plotting.correlation
@@ -242,6 +243,14 @@ def onEvent(evt):
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key].data
 
+    # CAMERA
+    doing_camera = False
+    if "camera" in evt.keys():        
+        analysis.injection_camera.getMaskedParticles(evt, "image", "ScQuestar2[image]", "maskedcamera", minX = 200, maxX = 1300, thresh = 30)
+        analysis.injection_camera.countContours(evt, "image", "ScQuestar2[image]", "maskedcamera", "coloredmask", "particlestream")
+        #print evt["analysis"]["particlestream"]
+        doing_camera = True
+
     # COUNT PHOTONS
     # Count photons in different detector regions
     analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=1, aduThreshold=0.5)
@@ -254,7 +263,7 @@ def onEvent(evt):
 
         
     if not hit or bgall:
-        # print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+        print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
@@ -313,6 +322,11 @@ def onEvent(evt):
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=0, hmax=100000, bins=100, window=100, history=1000)
     if do_front:
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
+
+    if doing_camera:
+        #print evt["analysis"]["particlestream"].data
+        plotting.image.plotImage(evt["image"]["ScQuestar2[image]"], msg="")
+        plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
     # Plot MeanMap of hitrate(y,z)
     plotting.correlation.plotMeanMap(x, z, evt["analysis"]["hitscore - " + c2x2_key].data, plotid='hitscoreMeanMap', **hitscoreMeanMapParams)
