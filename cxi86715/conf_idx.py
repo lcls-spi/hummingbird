@@ -36,7 +36,8 @@ do_showall        = False
 state = {}
 state['Facility'] = 'LCLS'
 
-run = '49'
+run_nr = 49
+run = "%04i" % run_nr
 # Read times and fiducials from text file
 idx_file = '/reg/neh/home/ksa47/convert/data/brights_%s.dat' % run
 with open(idx_file, "r") as fp:
@@ -56,8 +57,8 @@ else:
 
 # CSPAD 2x2
 # ---------
-c2x2_type = "image"
-c2x2_key  = "CsPad Dg2[image]"
+c2x2_nat_type = "image"
+c2x2_nat_key  = "CsPad Dg2[image]"
 
 # CSPAD large
 # -----------
@@ -71,6 +72,14 @@ injector_x_key = "CXI:PI2:MMS:01.RBV"
 injector_y_key = "CXI:PI2:MMS:02.RBV"
 injector_z_key = "CXI:PI2:MMS:03.RBV"
 
+# Background
+# ----------
+bgall = True
+Nbg   = 10
+fbg   = 10
+bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
+bg_dir = this_dir + "/stack_idx"
+
 # ---------------------------------------------------------
 # P A R A M E T E R S
 # ---------------------------------------------------------
@@ -80,6 +89,8 @@ injector_z_key = "CXI:PI2:MMS:03.RBV"
 M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
 mask_c2x2 = M_back.boolean_mask
 (ny_c2x2,nx_c2x2) = mask_c2x2.shape
+M_beamstops = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
+beamstops_c2x2 = M_beamstops.boolean_mask
 
 # Geometry
 # --------
@@ -112,7 +123,7 @@ modelParams = {
 sizingParams = {
     'd0':100,
     'i0':1,
-    'brute_evals':10,
+    'brute_evals':100,
 }
 
 # Classification
@@ -214,6 +225,11 @@ def onEvent(evt):
     # AVERAGE PULSE ENERGY
     analysis.beamline.averagePulseEnergy(evt, "pulseEnergies")
     
+    # CMC
+    analysis.pixel_detector.cmc(evt, c2x2_nat_type, c2x2_nat_key, mask=beamstops_c2x2)
+    c2x2_type = "analysis"
+    c2x2_key = "cmc - " + c2x2_nat_key
+
     # HIT FINDING
     # Simple hit finding by counting lit pixels
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
@@ -229,8 +245,15 @@ def onEvent(evt):
         analysis.pixel_detector.totalNrPhotons(evt, clarge_type, clarge_key, aduPhoton=1, aduThreshold=0.5)
         analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
 
+    if not hit or bgall:
+        # COLLECTING BACKGROUND
+        # Update background buffer
+        bg.add(evt[c2x2_type][c2x2_key].data)
+        # Write background to file
+        bg.write(evt,directory=bg_dir)
         
     if hit:
+
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
         if do_sizing:
@@ -324,16 +347,21 @@ def onEvent(evt):
             plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)
             # Plot fit radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
+            # Plot measurement radial average used
+            plotting.line.plotTrace(evt["analysis"]["radial average - used"], evt["analysis"]["radial distance - "+c2x2_key],tracelen=radial_tracelen)
             # Fit error history
             plotting.line.plotHistory(evt["analysis"]["fit error"])
 
+            # Plot parameter histories
+            plotting.line.plotHistory(evt["analysis"]["offCenterX"])
+            plotting.line.plotHistory(evt["analysis"]["offCenterY"])
+            plotting.line.plotHistory(evt["analysis"]["diameter"])
+            plotting.line.plotHistory(evt["analysis"]["intensity"])
+            #plotting.line.plotHistory(evt["analysis"]["diameter"], runningHistogram=True)
+            #plotting.line.plotHistory(evt["analysis"]["intensity"], runningHistogram=True)
+
             if fit_succeeded:
 
-                # Plot parameter histories
-                plotting.line.plotHistory(evt["analysis"]["offCenterX"])
-                plotting.line.plotHistory(evt["analysis"]["offCenterY"])
-                plotting.line.plotHistory(evt["analysis"]["diameter"], runningHistogram=True)
-                plotting.line.plotHistory(evt["analysis"]["intensity"], runningHistogram=True)
                 plotting.correlation.plotMeanMap(x,y,evt["analysis"]["diameter"].data, plotid='DiameterMeanMap', **diameterMeanMapParams)
                 plotting.correlation.plotMeanMap(x,y,evt["analysis"]["intensity"].data, plotid='IntensityMeanMap', **intensityMeanMapParams)
                         
