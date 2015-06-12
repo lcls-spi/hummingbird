@@ -325,7 +325,7 @@ def onEvent(evt):
     if doing_camera:
         print "Doing camera"
         print evt["image"]["ScQuestar2[image]"].data.shape
-        plotting.image.plotImage(evt["image"]["ScQuestar2[image]"], msg="", name="Raw Opal image")
+        plotting.image.plotImage(evt["image"]["ScQuestar2[image]"], msg="")
         #plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")
 
     # Plot MeanMap of hitrate(y,z)
