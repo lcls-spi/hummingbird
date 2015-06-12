@@ -100,8 +100,10 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 aduThreshold      = 20
 if do_online:
     hitscoreThreshold =  600
+    hitscoreDark = 20
 else:
-    hitscoreThreshold =  0    
+    hitscoreThreshold =  0
+    hitscoreDark = 0
 
 # Sizing
 # ------
@@ -242,8 +244,9 @@ def onEvent(evt):
     #analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
 
     # Simple hit finding by counting lit pixels
-    analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
-    hit = evt["analysis"]["isHit - " + c2x2_key].data
+    analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, hitscoreDark=hitscoreDark, mask=mask_c2x2)
+    hit  = evt["analysis"]["isHit - " + c2x2_key].data
+    miss = evt["analysis"]["isMiss - " + c2x2_key].data
 
     # CAMERA
     doing_camera = False
@@ -264,13 +267,14 @@ def onEvent(evt):
         analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
 
         
-    if not hit or bgall:
+    if miss or bgall:
         print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
         # Write background to file
         bg.write(evt,directory=bg_dir)
+        
     if hit:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
@@ -295,12 +299,15 @@ def onEvent(evt):
             if fit_succeeded:
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
-        
-               
+                
     # ------------------------ #
     # SEND RESULT TO INTERFACE #
     # ------------------------ #
 
+    # If not miss or hit, probably dark run -> do not send anything
+    if not (miss or hit):
+        return 
+    
     # Pulse Energy
     # plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
     
