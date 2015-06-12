@@ -10,6 +10,6 @@ trap 'kill -USR1 $PID' USR1
 PID=$!
 
 while true; do
-    wait $PID
+    wait $PID || break
 done
 
