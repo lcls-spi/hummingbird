@@ -52,7 +52,7 @@ if do_autoonline:
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=36'
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=29'
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
@@ -249,7 +249,7 @@ def onEvent(evt):
     if "camera" in evt.keys():        
         analysis.injection_camera.getMaskedParticles(evt, "image", "ScQuestar2[image]", "maskedcamera", minX = 200, maxX = 1300, thresh = 30)
         analysis.injection_camera.countContours(evt, "image", "ScQuestar2[image]", "maskedcamera", "coloredmask", "particlestream")
-        print evt["analysis"]["particlestream"]
+        #print evt["analysis"]["particlestream"]
         doing_camera = True
 
     # COUNT PHOTONS
@@ -264,7 +264,7 @@ def onEvent(evt):
 
         
     if not hit or bgall:
-        # print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+         print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
@@ -325,7 +325,7 @@ def onEvent(evt):
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
 
     if doing_camera:
-        print evt["analysis"]["particlestream"].data
+        #print evt["analysis"]["particlestream"].data
         plotting.image.plotImage(evt["image"]["ScQuestar2[image]"], msg="")
         plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
