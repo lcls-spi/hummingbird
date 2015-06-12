@@ -222,6 +222,7 @@ def onEvent(evt):
     # Time measurement
     analysis.event.printProcessingRate()
     #analysis.event.printID(evt["eventID"])
+    print evt.native_keys()
 
     # Send Fiducials and Timestamp
     plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
@@ -246,9 +247,9 @@ def onEvent(evt):
 
     # CAMERA
     doing_camera = False
-    if "camera" in evt.keys():        
-        analysis.injection_camera.getMaskedParticles(evt, "image", "ScQuestar2[image]", "maskedcamera", minX = 200, maxX = 1300, thresh = 30)
-        analysis.injection_camera.countContours(evt, "image", "ScQuestar2[image]", "maskedcamera", "coloredmask", "particlestream")
+    if False and "camera" in evt.keys():        
+        analysis.injection_camera.getMaskedParticles(evt, "image", "Sc2Questar[image]", "maskedcamera", minX = 200, maxX = 1300, thresh = 30)
+        analysis.injection_camera.countContours(evt, "image", "Sc2Questar[image]", "maskedcamera", "coloredmask", "particlestream")
         print evt["analysis"]["particlestream"]
         doing_camera = True
 
@@ -326,7 +327,7 @@ def onEvent(evt):
 
     if doing_camera:
         print evt["analysis"]["particlestream"].data
-        plotting.image.plotImage(evt["image"]["ScQuestar2[image]"], msg="")
+        plotting.image.plotImage(evt["image"]["Sc2Questar[image]"], msg="")
         plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
     # Plot MeanMap of hitrate(y,z)
