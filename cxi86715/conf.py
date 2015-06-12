@@ -148,15 +148,16 @@ else:
 # Radial averages
 radial_tracelen = 100
 
-x_min = -5
-x_max = 0
-x_bins = 100
+# Injector position limits
+x_min = -2.5
+x_max = -2.1
+x_bins = 40
 y_min = -40
 y_max = -35
 y_bins = 100
-z_min = -10
-z_max = -5
-z_bins = 100
+z_min = -6.6
+z_max = -6.2
+z_bins = 40
 
 # Hitrate mean map 
 hitrateMeanMapParams = {
@@ -306,7 +307,7 @@ def onEvent(evt):
 
     # If not miss or hit, probably dark run -> do not send anything
     if not (miss or hit):
-        return 
+hit        return 
     
     # Pulse Energy
     # plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
@@ -322,12 +323,12 @@ def onEvent(evt):
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
 
 
-    # Injector position
+    # Injector position (z is along the beam, x is across the beam)
     x = evt["parameters"][injector_x_key]
-    y = evt["parameters"][injector_y_key]
+    #y = evt["parameters"][injector_y_key]
     z = evt["parameters"][injector_z_key]
     plotting.line.plotHistory(x)
-    plotting.line.plotHistory(y)
+    #plotting.line.plotHistory(y)
     plotting.line.plotHistory(z)
 
     # Nr. of photons 
@@ -342,10 +343,10 @@ def onEvent(evt):
         plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
     # Plot MeanMap of hitrate(y,z)
-    plotting.correlation.plotMeanMap(x, z, evt["analysis"]["hitscore - " + c2x2_key].data, plotid='hitscoreMeanMap', **hitscoreMeanMapParams)
+    plotting.correlation.plotMeanMap(x, z, hit, plotid='hitrateMeanMap', **hitrateMeanMapParams)
 
     # Plot ScatterPlot with colored hitscore
-    plotting.correlation.plotScatterColor(x,z, evt["analysis"]["hitscore - " + c2x2_key], plotid='hitscoreScatter', vmin=0, vmax=2000, xlabel='Injector X', ylabel='Injectory Z', zlabel='Hitscore')
+    #plotting.correlation.plotScatterColor(x,z, evt["analysis"]["hitscore - " + c2x2_key], plotid='hitscoreScatter', vmin=0, vmax=2000, xlabel='Injector X', ylabel='Injectory Z', zlabel='Hitscore')
 
     if do_showall:
         
@@ -361,9 +362,6 @@ def onEvent(evt):
         
         # Image of hit
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2 )      
-
-        # Plot MeanMap of hitrate(y,z)
-        plotting.correlation.plotMeanMap(x, z, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
 
         if do_front:
             # Front detector image (central 4 asics) of hit
