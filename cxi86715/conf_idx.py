@@ -1,5 +1,6 @@
 import os,sys
 import numpy
+import struct
 import analysis.event
 import analysis.beamline
 import analysis.hitfinding
@@ -20,14 +21,8 @@ import diagnostics
 # Flags
 # -----
 
-# Lots of ouput
-do_diagnostics    = False
 # Sizing
 do_sizing         = True
-# Running from shared memory
-do_online         = False
-# Make sure to run online on cxiopr
-do_autoonline     = True
 # Front detector activated
 do_front          = True
 # Do assembly of the front
@@ -41,17 +36,18 @@ do_showall        = False
 state = {}
 state['Facility'] = 'LCLS'
 
-cxiopr = False
-if do_autoonline:
-    import getpass
-    if getpass.getuser() == "cxiopr":
-        do_online  = True
-        cxiopr     = True
+run = '49'
+# Read times and fiducials from text file
+idx_file = '/reg/neh/home/ksa47/convert/data/brights_%s.dat' % run
+with open(idx_file, "r") as fp:
+    lines = fp.readlines()
+    state['times'] = []
+    state['fiducials'] = []
+    for l in lines:
+        state['times'].append(int(l.split("\t")[0]))
+        state['fiducials'].append(int(l.split("\t")[1][:-len("\r\n")]))
 
-if do_online:
-    state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
-else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=49'
+state['LCLS/DataSource'] = 'exp=cxi86715:run=%s:idx' % run
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
@@ -92,13 +88,11 @@ G_front = utils.reader.GeometryReader(this_dir + "/geometry/geometry_front.h5", 
 x_front = numpy.array(utils.array.cheetahToSlacH5(G_front.x), dtype="int")
 y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 
+
 # Hit finding
 # -----------
 aduThreshold      = 20
-if do_online:
-    hitscoreThreshold =  600
-else:
-    hitscoreThreshold =  600    
+hitscoreThreshold =  0
 
 # Sizing
 # ------
@@ -126,17 +120,6 @@ sizingParams = {
 fit_error_threshold  = 1.
 diameter_expected    = 70
 diameter_error_max   = 30
-
-# Background
-# ----------
-bgall = False
-Nbg   = 1000
-fbg   = 10000
-bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
-if cxiopr:
-    bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
-else:
-    bg_dir = this_dir + "/stack"
 
 # Plotting
 # --------
@@ -224,20 +207,14 @@ def onEvent(evt):
     # Send Fiducials and Timestamp
     plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
     
-    # Spit out a lot for debugging
-    if do_diagnostics: diagnostics.initial_diagnostics(evt)
-    
     # -------- #
     # ANALYSIS #
     # -------- #
-    #print evt.native_keys()
 
     # AVERAGE PULSE ENERGY
     analysis.beamline.averagePulseEnergy(evt, "pulseEnergies")
     
     # HIT FINDING
-    #analysis.hitfinding.countTof(evt, "ionTOFs", "Acqiris 0 Channel 0")
-
     # Simple hit finding by counting lit pixels
     analysis.hitfinding.countLitPixels(evt, c2x2_type, c2x2_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, mask=mask_c2x2)
     hit = evt["analysis"]["isHit - " + c2x2_key].data
@@ -253,13 +230,6 @@ def onEvent(evt):
         analysis.pixel_detector.totalNrPhotons(evt, "analysis", "central4Asics", aduPhoton=1, aduThreshold=0.5)
 
         
-    if not hit or bgall:
-        # print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
-        # COLLECTING BACKGROUND
-        # Update background buffer
-        bg.add(evt[c2x2_type][c2x2_key].data)
-        # Write background to file
-        bg.write(evt,directory=bg_dir)
     if hit:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
@@ -378,10 +348,3 @@ def onEvent(evt):
                         # Front detector image of good hit
                         plotting.image.plotImage(evt[clarge_type][clarge_key], msg="", name="Cspad large (full): Correct particle size", vmin=vmin_clarge, vmax=vmax_clarge)       
         
-    # ----------------- #
-    # FINAL DIAGNOSTICS #
-    # ----------------- #
-    
-    # Spit out a lot for debugging
-    if do_diagnostics: diagnostics.final_diagnostics(evt)
-
