@@ -195,6 +195,18 @@ diameterMeanMapParams = {
     'ylabel': 'Injector Position in z'  
 }
 
+# Mean map of hitrate as function of diameter and intensity
+sizingMeanMapParams = {
+    'xmin': 40,
+    'xmax': 240,
+    'ymin': 0,
+    'ymax': 1,
+    'xbins': 20,
+    'ybins': 100,
+    'xlabel': 'Diameter in [nm]',
+    'ylabel': 'Intensity in [mJ/um2]'  
+}
+
 # Diameter mean map
 intensityMeanMapParams = {
     'xmin': x_min,
@@ -307,7 +319,7 @@ def onEvent(evt):
 
     # If not miss or hit, probably dark run -> do not send anything
     if not (miss or hit):
-hit        return 
+        return 
     
     # Pulse Energy
     # plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
@@ -389,9 +401,10 @@ hit        return
                 plotting.line.plotHistory(evt["analysis"]["offCenterY"])
                 plotting.line.plotHistory(evt["analysis"]["diameter"], runningHistogram=True)
                 plotting.line.plotHistory(evt["analysis"]["intensity"], runningHistogram=True)
-                plotting.correlation.plotMeanMap(x,y,evt["analysis"]["diameter"].data, plotid='DiameterMeanMap', **diameterMeanMapParams)
-                plotting.correlation.plotMeanMap(x,y,evt["analysis"]["intensity"].data, plotid='IntensityMeanMap', **intensityMeanMapParams)
-                        
+                plotting.correlation.plotMeanMap(x,z,evt["analysis"]["diameter"].data, plotid='DiameterMeanMap', **diameterMeanMapParams)
+                plotting.correlation.plotMeanMap(x,z,evt["analysis"]["intensity"].data, plotid='IntensityMeanMap', **intensityMeanMapParams)
+                plotting.correlation.plotMeanMap(evt["analysis"]["diameter"], evt["analysis"]["intensity"], hit, **sizingMeanMapParams)
+
                 if good_hit:
 
                     # Diameter vs. intensity scatter plot
