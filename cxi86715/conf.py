@@ -403,12 +403,12 @@ def onEvent(evt):
                 plotting.line.plotHistory(evt["analysis"]["intensity"], runningHistogram=True)
                 plotting.correlation.plotMeanMap(x,z,evt["analysis"]["diameter"].data, plotid='DiameterMeanMap', **diameterMeanMapParams)
                 plotting.correlation.plotMeanMap(x,z,evt["analysis"]["intensity"].data, plotid='IntensityMeanMap', **intensityMeanMapParams)
-                plotting.correlation.plotMeanMap(evt["analysis"]["diameter"], evt["analysis"]["intensity"], hit, **sizingMeanMapParams)
+
+                # Diameter vs. intensity scatter plot
+                plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
 
                 if good_hit:
 
-                    # Diameter vs. intensity scatter plot
-                    plotting.correlation.plotScatter(evt["analysis"]["diameter"], evt["analysis"]["intensity"], plotid='Diameter vs. intensity', history=100)
                     # Image of good hit
                     plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", log=True, mask=mask_c2x2, name="Cspad 2x2: Hit and correct particle size", vmin=vmin_c2x2, vmax=vmax_c2x2)
                     
