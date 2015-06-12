@@ -23,7 +23,7 @@ import diagnostics
 # Lots of ouput
 do_diagnostics    = False
 # Sizing
-do_sizing         = False
+do_sizing         = True
 # Running from shared memory
 do_online         = False
 # Make sure to run online on cxiopr
@@ -96,7 +96,9 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 # -----------
 aduThreshold      = 20
 #aduThreshold      = 10
-hitscoreThreshold = 200
+#hitscoreThreshold = 250
+#hitscoreThreshold = 1100
+hitscoreThreshold = 400
 #hitscoreThreshold = 200
 
 # Sizing
@@ -109,9 +111,9 @@ centerParams = {
     'blur'     : 4,
 }
 modelParams = {
-    'wavelength':0.12398,
+    'wavelength':0.1795,
     'pixelsize':110,
-    'distance':2160,
+    'distance':2400,
     'material':'virus',
 }
 sizingParams = {
@@ -142,12 +144,43 @@ else:
 # Radial averages
 radial_tracelen = 100
 
+x_min = -5
+x_max = 0
+y_min = -40
+y_max = -35
+z_min = -10
+z_max = -5
+
 # Hitrate mean map 
 hitrateMeanMapParams = {
-    'xmin': -1000,
-    'xmax': +1000,
-    'ymin': -1000,
-    'ymax': +1000,
+    'xmin': x_min,
+    'xmax': x_max,
+    'ymin': z_min,
+    'ymax': z_max,
+    'xbins': 10,
+    'ybins': 10,
+    'xlabel': 'Injector Position in y',
+    'ylabel': 'Injector Position in z'  
+}
+
+# Hitscore mean map 
+hitscoreMeanMapParams = {
+    'xmin': x_min,
+    'xmax': x_max,
+    'ymin': z_min,
+    'ymax': z_max,
+    'xbins': 10,
+    'ybins': 10,
+    'xlabel': 'Injector Position in y',
+    'ylabel': 'Injector Position in z'  
+}
+
+# Diameter mean map
+diameterMeanMapParams = {
+    'xmin': x_min,
+    'xmax': x_max,
+    'ymin': z_min,
+    'ymax': z_max,
     'xbins': 10,
     'ybins': 10,
     'xlabel': 'Injector Position in y',
@@ -261,14 +294,15 @@ def onEvent(evt):
     plotting.line.plotHistory(y)
     plotting.line.plotHistory(z)
 
-    # ToF
-    plotting.line.plotTrace(evt["ionTOFs"]["Acqiris 0 Channel 0"]) 
-
     # Nr. of photons 
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=0, hmax=100000, bins=100, window=100, history=1000)
     if do_front:
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
+
+    # Plot MeanMap of hitrate(y,z)
+    plotting.correlation.plotMeanMap(y, z, evt["analysis"]["hitscore - " + c2x2_key].data, plotid='hitscoreMeanMap', **hitscoreMeanMapParams)
+
 
     if do_showall:
         
@@ -278,9 +312,12 @@ def onEvent(evt):
         plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], mask=mask_c2x2, hmin=-100, hmax=100, bins=200, label='Cspad 2x2 pixel value [ADU]')
         
     if hit:
+
+        # ToF
+        plotting.line.plotTrace(evt["ionTOFs"]["Acqiris 0 Channel 0"]) 
         
         # Image of hit
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2)      
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2 )      
 
         # Plot MeanMap of hitrate(y,z)
         plotting.correlation.plotMeanMap(y, z, hit, plotid='HitrateMeanMap', **hitrateMeanMapParams)
