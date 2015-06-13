@@ -36,6 +36,10 @@ do_front          = True
 do_assemble_front = True
 # Send the 2x2 images all events to the frontend
 do_showall        = False
+# Common mode correction for hits
+do_cmc            = True
+# Running background subtraction for hits
+do_bgub           = False
 # Particle camera
 do_camera         = True
 
@@ -137,10 +141,11 @@ diameter_error_max   = 30
 
 # Background
 # ----------
-bgall = False
-Nbg   = 1000
-fbg   = 10000
-bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
+bgall = True
+Nbg   = 10
+rbg   = 10
+obg   = 1000
+bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
 else:
@@ -152,7 +157,7 @@ recordlist = {
     'size': ('analysis', 'diameter'),
     'intensity': ('analysis', 'intensity'),
     'error': ('analysis', 'fit error'),
-    'hitscore' ('analysis', 'hitscore - ' + c2x2_key)
+    'hitscore': ('analysis', 'hitscore - ' + c2x2_key)
 }
 #recorder = analysis.recorder.Recorder('/reg/neh/home/benedikt/cxi86715/hits/', recordlist, ipc.mpi.rank, maxEvents=1000)
     
@@ -296,19 +301,30 @@ def onEvent(evt):
     if miss or bgall:
         #print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
-        # Update background buffer
+        # Update
         bg.add(evt[c2x2_type][c2x2_key].data)
-        # Write background to file
+        # Reduce
+        bg.reduce()
+        # Write to file
         bg.write(evt,directory=bg_dir)
         
     if hit:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
         if do_sizing:
-            # CMC
-            analysis.pixel_detector.cmc(evt, c2x2_type, c2x2_key, mask=beamstops_c2x2)
-            c2x2_type_s = "analysis"
-            c2x2_key_s = "cmc - " + c2x2_key            
+            if do_cmc:
+                # CMC
+                analysis.pixel_detector.cmc(evt, c2x2_type, c2x2_key, mask=beamstops_c2x2)
+                c2x2_type_s = "analysis"
+                c2x2_key_s = "cmc - " + c2x2_key            
+            if do_bgsub:
+                # Running background subtraction
+                analysis.pixel_detector.bgsub(evt, c2x2_type_s, c2x2_key_s, bg=bg.last_mean)
+                c2x2_type_s = "analysis"
+                c2x2_key_s = "bgsub - " + c2x2_key_s            
+            if not do_cmc and not do_bgsub:
+                c2x2_type_s = c2x2_type
+                c2x2_key_s = c2x2_key
             # RADIAL SPHERE FIT
             # Find the center of diffraction
             analysis.sizing.findCenter(evt, c2x2_type_s, c2x2_key_s, mask=mask_c2x2, **centerParams)
@@ -394,8 +410,9 @@ def onEvent(evt):
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2 )      
 
         if do_sizing:
-            # Image of hit (cmc corrected)
-            plotting.image.plotImage(evt[c2x2_type_s][c2x2_key_s], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit (cmc corrected)", vmin=vmin_c2x2, vmax=vmax_c2x2 )      
+            if do_cmc or do_bgsub:
+                # Image of hit (cmc corrected)
+                plotting.image.plotImage(evt[c2x2_type_s][c2x2_key_s], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit (corrected)", vmin=vmin_c2x2, vmax=vmax_c2x2 )
         
         if do_front:
             # Front detector image (central 4 asics) of hit
