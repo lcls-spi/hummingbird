@@ -11,6 +11,7 @@ import analysis.injection_camera
 import plotting.image
 import plotting.line
 import plotting.correlation
+import backend
 import ipc  
 import utils.reader
 import utils.array
@@ -39,7 +40,7 @@ do_showall        = False
 # Common mode correction for hits
 do_cmc            = True
 # Running background subtraction for hits
-do_bgub           = False
+do_bgsub          = False
 # Particle camera
 do_camera         = True
 
@@ -135,7 +136,7 @@ sizingParams = {
 
 # Classification
 # --------------
-fit_error_threshold  = 1.
+fit_error_threshold  = 0.00085
 diameter_expected    = 70
 diameter_error_max   = 30
 
@@ -345,6 +346,7 @@ def onEvent(evt):
             if fit_succeeded:
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
+            backend.add_record(evt["analysis"], "analysis", "Good hit rate", float(good_hit))
 
         # Record hits together with sizing results
         recorder.append(evt)
