@@ -36,13 +36,13 @@ do_front          = True
 # Do assembly of the front
 do_assemble_front = True
 # Send the 2x2 images all events to the frontend
-do_showall        = False
+do_showall        = True
 # Common mode correction for hits
 do_cmc            = True
 # Running background subtraction for hits
 do_bgsub          = False
 # Particle camera
-do_camera         = True
+do_camera         = False
 
 # ---------------------------------------------------------
 # P S A N A
@@ -107,7 +107,9 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 # -----------
 aduThreshold = 50
 if do_online:
-    hitscoreThreshold = 4500
+    #hitscoreThreshold = 20
+    #hitscoreThreshold = 4500
+    hitscoreThreshold = 500
     hitscoreDark = 20
 else:
     hitscoreThreshold =  0
@@ -142,10 +144,10 @@ diameter_error_max   = 30
 
 # Background
 # ----------
-bgall = True
+bgall = False
 Nbg   = 100
-rbg   = 1000
-obg   = 1000
+rbg   = 500
+obg   = 500
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
@@ -161,7 +163,8 @@ recordlist = {
     'hitscore': ('analysis', 'hitscore - ' + c2x2_key)
 }
 if do_online:
-    recorddir = '/reg/neh/home/benedikt/cxi86715/online/hits/'
+    #recorddir = '/reg/neh/home/benedikt/cxi86715/online/hits/'
+    recorddir = '/reg/neh/home/hantke/cxi86715_scratch/online/hits/'
 else:
     recorddir = '/reg/neh/home/benedikt/cxi86715/offline/hits/'
 recorder = analysis.recorder.Recorder(recorddir, recordlist, ipc.mpi.rank, maxEvents=1000, xtc=(not do_online))
