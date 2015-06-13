@@ -148,12 +148,12 @@ else:
 
 # Recording
 # ---------
-recordlist = {
-    'size': ('analysis', 'diameter'),
-    'intensity': ('analysis', 'intensity'),
-    'error': ('analysis', 'fit error'),
-    'hitscore' ('analysis', 'hitscore - ' + c2x2_key)
-}
+#recordlist = {
+#    'size': ('analysis', 'diameter'),
+#    'intensity': ('analysis', 'intensity'),
+#    'error': ('analysis', 'fit error'),
+#    'hitscore' ('analysis', 'hitscore - ' + c2x2_key)
+#}
 #recorder = analysis.recorder.Recorder('/reg/neh/home/benedikt/cxi86715/hits/', recordlist, ipc.mpi.rank, maxEvents=1000)
     
 # Plotting
