@@ -5,6 +5,7 @@ import analysis.beamline
 import analysis.hitfinding
 import analysis.pixel_detector
 import analysis.stack
+import analysis.recorder
 import analysis.sizing
 import analysis.injection_camera
 import plotting.image
@@ -145,6 +146,16 @@ if cxiopr:
 else:
     bg_dir = this_dir + "/stack"
 
+# Recording
+# ---------
+recordlist = {
+    'size': ('analysis', 'diameter'),
+    'intensity': ('analysis', 'intensity'),
+    'error': ('analysis', 'fit error'),
+    'hitscore' ('analysis', 'hitscore - ' + c2x2_key)
+}
+#recorder = analysis.recorder.Recorder('/reg/neh/home/benedikt/cxi86715/hits/', recordlist, ipc.mpi.rank, maxEvents=1000)
+    
 # Plotting
 # --------
 # Radial averages
@@ -314,6 +325,9 @@ def onEvent(evt):
             if fit_succeeded:
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
+
+        # Record hits together with sizing results
+        #recorder.append(evt)
                 
     # ------------------------ #
     # SEND RESULT TO INTERFACE #
