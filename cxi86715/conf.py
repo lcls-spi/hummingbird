@@ -101,7 +101,7 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 # -----------
 aduThreshold = 50
 if do_online:
-    hitscoreThreshold = 12500
+    hitscoreThreshold = 4500
     hitscoreDark = 20
 else:
     hitscoreThreshold =  0
@@ -151,15 +151,15 @@ else:
 radial_tracelen = 100
 
 # Injector position limits
-x_min = -2.5
-x_max = -2.1
-x_bins = 40
+x_min = -3
+x_max = -1
+x_bins = 100
 y_min = -40
 y_max = -35
 y_bins = 100
-z_min = -6.6
-z_max = -6.2
-z_bins = 40
+z_min = -6.5
+z_max = -4.5
+z_bins = 100
 
 # Hitrate mean map 
 hitrateMeanMapParams = {
