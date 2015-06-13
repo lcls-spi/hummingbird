@@ -32,11 +32,11 @@ do_autoonline     = True
 # Front detector activated
 do_front          = True
 # Do assembly of the front
-do_assemble_front = False
+do_assemble_front = True
 # Send the 2x2 images all events to the frontend
 do_showall        = False
 # Particle camera
-do_camera         = True
+do_camera         = False
 
 # ---------------------------------------------------------
 # P S A N A
@@ -99,9 +99,9 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 
 # Hit finding
 # -----------
-aduThreshold      = 20
+aduThreshold = 50
 if do_online:
-    hitscoreThreshold =  15000
+    hitscoreThreshold = 12500
     hitscoreDark = 20
 else:
     hitscoreThreshold =  0
@@ -137,8 +137,8 @@ diameter_error_max   = 30
 # Background
 # ----------
 bgall = False
-Nbg   = 500
-fbg   = 500
+Nbg   = 1000
+fbg   = 10000
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
