@@ -109,7 +109,7 @@ aduThreshold = 50
 if do_online:
     #hitscoreThreshold = 20
     #hitscoreThreshold = 4500
-    hitscoreThreshold = 500
+    hitscoreThreshold = 2000
     hitscoreDark = 20
 else:
     hitscoreThreshold =  0
@@ -163,11 +163,10 @@ recordlist = {
     'hitscore': ('analysis', 'hitscore - ' + c2x2_key)
 }
 if do_online:
-    #recorddir = '/reg/neh/home/benedikt/cxi86715/online/hits/'
     recorddir = '/reg/neh/home/hantke/cxi86715_scratch/online/hits/'
 else:
-    recorddir = '/reg/neh/home/benedikt/cxi86715/offline/hits/'
-recorder = analysis.recorder.Recorder(recorddir, recordlist, ipc.mpi.rank, maxEvents=1000, xtc=(not do_online))
+    recorddir = '/reg/d/psdm/cxi/cxi86715/scratch/hummingbird/offline_hits/'
+recorder = analysis.recorder.Recorder(recorddir, recordlist, ipc.mpi.rank, maxEvents=10000)
     
 # Plotting
 # --------
@@ -177,13 +176,13 @@ radial_tracelen = 100
 # Injector position limits
 x_min = -3
 x_max = -1
-x_bins = 100
+x_bins = 50
 y_min = -40
 y_max = -35
 y_bins = 100
 z_min = -6.5
 z_max = -4.5
-z_bins = 100
+z_bins = 50
 
 # Hitrate mean map 
 hitrateMeanMapParams = {
