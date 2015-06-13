@@ -101,7 +101,7 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 # -----------
 aduThreshold      = 20
 if do_online:
-    hitscoreThreshold =  600
+    hitscoreThreshold =  15000
     hitscoreDark = 20
 else:
     hitscoreThreshold =  0
@@ -137,8 +137,8 @@ diameter_error_max   = 30
 # Background
 # ----------
 bgall = False
-Nbg   = 1000
-fbg   = 10000
+Nbg   = 100
+fbg   = 1000
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
@@ -243,7 +243,7 @@ def onEvent(evt):
     #print evt.native_keys()
 
     # Send Fiducials and Timestamp
-    #plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
+    plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
     
     # Spit out a lot for debugging
     if do_diagnostics: diagnostics.initial_diagnostics(evt)
@@ -273,7 +273,7 @@ def onEvent(evt):
 
     # COUNT PHOTONS
     # Count photons in different detector regions
-    analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=1, aduThreshold=0.5)
+    analysis.pixel_detector.totalNrPhotons(evt, c2x2_type, c2x2_key, aduPhoton=20, aduThreshold=10)
     if do_front:
         analysis.pixel_detector.getCentral4Asics(evt, clarge_type, clarge_key)
         if do_assemble_front:
@@ -283,7 +283,7 @@ def onEvent(evt):
 
         
     if miss or bgall:
-        print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
+        #print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
         # Update background buffer
         bg.add(evt[c2x2_type][c2x2_key].data)
@@ -306,7 +306,7 @@ def onEvent(evt):
             # Fitting sphere model to get size and intensity
             analysis.sizing.fitSphereRadial(evt, "analysis", "radial distance - " + c2x2_key_s, "radial average - " + c2x2_key_s, **dict(modelParams, **sizingParams))
             # Calculate diffraction pattern from fit result 
-            analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_c2x2,nx_c2x2), poisson=True, **modelParams)
+            analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_c2x2,nx_c2x2), poisson=False, **modelParams)
             # Calculate radial average of diffraction pattern from fit result
             analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
             # Decide whether or not the fit was successful
@@ -326,8 +326,8 @@ def onEvent(evt):
         plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
     # If not miss or hit, probably dark run -> do not send anything
-    if not (miss or hit):
-        return 
+    #if not (miss or hit):
+    #    return 
     
     # Pulse Energy
     # plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
@@ -363,10 +363,9 @@ def onEvent(evt):
     # Plot ScatterPlot with colored hitscore
     #plotting.correlation.plotScatterColor(x,z, evt["analysis"]["hitscore - " + c2x2_key], plotid='hitscoreScatter', vmin=0, vmax=2000, xlabel='Injector X', ylabel='Injectory Z', zlabel='Hitscore')
 
-    if do_showall:
-        
+    if do_showall:        
         # Image of back detector for all events
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: All", vmin=vmin_c2x2, vmax=vmax_c2x2)
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", name="Cspad 2x2: All", vmin=vmin_c2x2, vmax=vmax_c2x2)
         # Histogram of detector for all events
         plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], mask=mask_c2x2, hmin=-100, hmax=100, bins=200, label='Cspad 2x2 pixel value [ADU]')
     plotting.correlation.plotMeanMap(evt["analysis"]["averagePulseEnergy"], evt["analysis"]["nrPhotons - central4Asics"], hit)
