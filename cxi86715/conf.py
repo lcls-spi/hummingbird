@@ -157,9 +157,18 @@ recordlist = {
     'size': ('analysis', 'diameter'),
     'intensity': ('analysis', 'intensity'),
     'error': ('analysis', 'fit error'),
+<<<<<<< HEAD
     'hitscore': ('analysis', 'hitscore - ' + c2x2_key)
 }
 #recorder = analysis.recorder.Recorder('/reg/neh/home/benedikt/cxi86715/hits/', recordlist, ipc.mpi.rank, maxEvents=1000)
+=======
+    'hitscore': ('analysis', 'hitscore - ' + c2x2_key)}
+if do_online:
+    recorddir = '/reg/neh/home/benedikt/cxi86715/online/hits/'
+else:
+    recorddir = '/reg/neh/home/benedikt/cxi86715/offline/hits/'
+recorder = analysis.recorder.Recorder(recorddir, recordlist, ipc.mpi.rank, maxEvents=1000, xtc=(not do_online))
+>>>>>>> 55689f64611d3da4f5231bcb0f521d6c5b1cf506
     
 # Plotting
 # --------
@@ -343,7 +352,7 @@ def onEvent(evt):
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
 
         # Record hits together with sizing results
-        #recorder.append(evt)
+        recorder.append(evt)
                 
     # ------------------------ #
     # SEND RESULT TO INTERFACE #
