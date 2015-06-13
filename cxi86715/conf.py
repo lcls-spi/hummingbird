@@ -36,7 +36,7 @@ do_assemble_front = False
 # Send the 2x2 images all events to the frontend
 do_showall        = False
 # Particle camera
-do_camera         = False
+do_camera         = True
 
 # ---------------------------------------------------------
 # P S A N A
@@ -137,8 +137,8 @@ diameter_error_max   = 30
 # Background
 # ----------
 bgall = False
-Nbg   = 100
-fbg   = 1000
+Nbg   = 500
+fbg   = 500
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
