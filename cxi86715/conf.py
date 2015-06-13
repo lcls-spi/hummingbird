@@ -35,7 +35,7 @@ do_front          = True
 do_assemble_front = False
 # Send the 2x2 images all events to the frontend
 do_showall        = False
-# Particle camera
+u# Particle camera
 do_camera         = True
 
 # ---------------------------------------------------------
@@ -87,7 +87,7 @@ injector_z_key = "CXI:PI2:MMS:03.RBV"
 M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
 mask_c2x2 = M_back.boolean_mask
 (ny_c2x2,nx_c2x2) = mask_c2x2.shape
-M_beamstops = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
+M_beamstops = utils.reader.MaskReader(this_dir + "/mask/beamstops_back.h5","/data/data")
 beamstops_c2x2 = M_beamstops.boolean_mask
 
 # Geometry
