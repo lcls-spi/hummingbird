@@ -55,7 +55,7 @@ if do_autoonline:
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=57'
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=70'
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
@@ -308,7 +308,7 @@ def onEvent(evt):
             # CMC
             analysis.pixel_detector.cmc(evt, c2x2_type, c2x2_key, mask=beamstops_c2x2)
             c2x2_type_s = "analysis"
-            c2x2_key_s = "cmc - " + c2x2_key
+            c2x2_key_s = "cmc - " + c2x2_key            
             # RADIAL SPHERE FIT
             # Find the center of diffraction
             analysis.sizing.findCenter(evt, c2x2_type_s, c2x2_key_s, mask=mask_c2x2, **centerParams)
@@ -393,6 +393,10 @@ def onEvent(evt):
         # Image of hit
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2 )      
 
+        if do_sizing:
+            # Image of hit (cmc corrected)
+            plotting.image.plotImage(evt[c2x2_type_s][c2x2_key_s], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit (cmc corrected)", vmin=vmin_c2x2, vmax=vmax_c2x2 )      
+        
         if do_front:
             # Front detector image (central 4 asics) of hit
             #plotting.image.plotImage(evt[clarge_type][clarge_key])
