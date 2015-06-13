@@ -1,5 +1,5 @@
 import os,sys
-import numpy
+import numpy, h5py
 import struct
 import analysis.event
 import analysis.beamline
@@ -30,16 +30,34 @@ do_assemble_front = False
 # Send the 2x2 images all events to the frontend
 do_showall        = False
 
+# Mask
+# ----
+M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
+mask_c2x2 = M_back.boolean_mask
+(ny_c2x2,nx_c2x2) = mask_c2x2.shape
+M_beamstops = utils.reader.MaskReader(this_dir + "/mask/beamstops_back.h5","/data/data")
+beamstops_c2x2 = M_beamstops.boolean_mask
+
+# Geometry
+# --------
+pixel_size = 110E-6
+G_front = utils.reader.GeometryReader(this_dir + "/geometry/geometry_front.h5", pixel_size=110.E-6)
+x_front = numpy.array(utils.array.cheetahToSlacH5(G_front.x), dtype="int")
+y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
+
 # ---------------------------------------------------------
 # P S A N A
 # ---------------------------------------------------------
 state = {}
 state['Facility'] = 'LCLS'
 
-run_nr = 49
+run_nr = int(os.environ["HUMMINGBIRD_RUN"])
+print run_nr
 run = "%04i" % run_nr
 # Read times and fiducials from text file
 idx_file = '/reg/neh/home/ksa47/convert/data/brights_%s.dat' % run
+# Fit results
+fitres_file = this_dir + "/fitres/fitres_%s.h5" % run
 with open(idx_file, "r") as fp:
     lines = fp.readlines()
     state['times'] = []
@@ -47,6 +65,21 @@ with open(idx_file, "r") as fp:
     for l in lines:
         state['times'].append(int(l.split("\t")[0]))
         state['fiducials'].append(int(l.split("\t")[1][:-len("\r\n")]))
+    # Create fitres file
+    with h5py.File(fitres_file, "w") as f:
+        N = len(state["times"])
+        f["/data/diameter_nm"] = numpy.zeros(N)
+        f["/data/diameter_nm"].attrs.modify("axes", ["experiment_identifier:x"])
+        f["/data/error"]   = numpy.zeros(N)
+        f["/data/error"].attrs.modify("axes", ["experiment_identifier:x"])
+        f["/data/intensity_mJ_um2"] = numpy.zeros(N)
+        f["/data/intensity_mJ_um2"].attrs.modify("axes", ["experiment_identifier:x"])
+        f["/data/img_fit"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
+        f["/data/img_fit"].attrs.modify("axes", ["experiment_identifier:y:x"])
+        f["/data/img_data"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
+        f["/data/img_data"].attrs.modify("axes", ["experiment_identifier:y:x"])
+
+i_fitres = 0
 
 state['LCLS/DataSource'] = 'exp=cxi86715:run=%s:idx' % run
 
@@ -83,22 +116,6 @@ bg_dir = this_dir + "/stack_idx"
 # ---------------------------------------------------------
 # P A R A M E T E R S
 # ---------------------------------------------------------
-
-# Mask
-# ----
-M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
-mask_c2x2 = M_back.boolean_mask
-(ny_c2x2,nx_c2x2) = mask_c2x2.shape
-M_beamstops = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
-beamstops_c2x2 = M_beamstops.boolean_mask
-
-# Geometry
-# --------
-pixel_size = 110E-6
-G_front = utils.reader.GeometryReader(this_dir + "/geometry/geometry_front.h5", pixel_size=110.E-6)
-x_front = numpy.array(utils.array.cheetahToSlacH5(G_front.x), dtype="int")
-y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
-
 
 # Hit finding
 # -----------
@@ -265,7 +282,7 @@ def onEvent(evt):
             # Fitting sphere model to get size and intensity
             analysis.sizing.fitSphereRadial(evt, "analysis", "radial distance - " + c2x2_key, "radial average - " + c2x2_key, **dict(modelParams, **sizingParams))
             # Calculate diffraction pattern from fit result 
-            analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_c2x2,nx_c2x2), poisson=True, **modelParams)
+            analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_c2x2,nx_c2x2), poisson=False, **modelParams)
             # Calculate radial average of diffraction pattern from fit result
             analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
             # Decide whether or not the fit was successful
@@ -273,8 +290,16 @@ def onEvent(evt):
             if fit_succeeded:
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
-        
-               
+
+            # Write out info
+            global i_fitres
+            with h5py.File(fitres_file,"r+") as f:
+                f["/data/diameter_nm"][i_fitres] = evt["analysis"]["diameter"].data
+                f["/data/intensity_mJ_um2"][i_fitres] = evt["analysis"]["intensity"].data
+                f["/data/error"][i_fitres] = evt["analysis"]["fit error"].data
+                f["/data/img_fit"][i_fitres] = evt["analysis"]["fit"].data
+                f["/data/img_data"][i_fitres] = evt[c2x2_type][c2x2_key].data
+            i_fitres += 1
     # ------------------------ #
     # SEND RESULT TO INTERFACE #
     # ------------------------ #
@@ -323,7 +348,7 @@ def onEvent(evt):
     if hit:
 
         # ToF
-        plotting.line.plotTrace(evt["ionTOFs"]["Acqiris 0 Channel 1"]) 
+        #plotting.line.plotTrace(evt["ionTOFs"]["Acqiris 0 Channel 1"]) 
         
         # Image of hit
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2 )      

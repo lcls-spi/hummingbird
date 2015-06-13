@@ -5,11 +5,13 @@ import analysis.beamline
 import analysis.hitfinding
 import analysis.pixel_detector
 import analysis.stack
+import analysis.recorder
 import analysis.sizing
 import analysis.injection_camera
 import plotting.image
 import plotting.line
 import plotting.correlation
+import backend
 import ipc  
 import utils.reader
 import utils.array
@@ -32,11 +34,15 @@ do_autoonline     = True
 # Front detector activated
 do_front          = True
 # Do assembly of the front
-do_assemble_front = False
+do_assemble_front = True
 # Send the 2x2 images all events to the frontend
 do_showall        = False
+# Common mode correction for hits
+do_cmc            = True
+# Running background subtraction for hits
+do_bgsub          = False
 # Particle camera
-do_camera         = False
+do_camera         = True
 
 # ---------------------------------------------------------
 # P S A N A
@@ -54,7 +60,7 @@ if do_autoonline:
 if do_online:
     state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 else:
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=57'
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=70'
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
@@ -87,7 +93,7 @@ injector_z_key = "CXI:PI2:MMS:03.RBV"
 M_back    = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
 mask_c2x2 = M_back.boolean_mask
 (ny_c2x2,nx_c2x2) = mask_c2x2.shape
-M_beamstops = utils.reader.MaskReader(this_dir + "/mask/mask_back.h5","/data/data")
+M_beamstops = utils.reader.MaskReader(this_dir + "/mask/beamstops_back.h5","/data/data")
 beamstops_c2x2 = M_beamstops.boolean_mask
 
 # Geometry
@@ -99,9 +105,9 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 
 # Hit finding
 # -----------
-aduThreshold      = 20
+aduThreshold = 50
 if do_online:
-    hitscoreThreshold =  15000
+    hitscoreThreshold = 4500
     hitscoreDark = 20
 else:
     hitscoreThreshold =  0
@@ -130,36 +136,51 @@ sizingParams = {
 
 # Classification
 # --------------
-fit_error_threshold  = 1.
+fit_error_threshold  = 0.00085
 diameter_expected    = 70
 diameter_error_max   = 30
 
 # Background
 # ----------
-bgall = False
+bgall = True
 Nbg   = 100
-fbg   = 1000
-bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
+rbg   = 1000
+obg   = 1000
+bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
 else:
     bg_dir = this_dir + "/stack"
 
+# Recording
+# ---------
+recordlist = {
+    'size': ('analysis', 'diameter'),
+    'intensity': ('analysis', 'intensity'),
+    'error': ('analysis', 'fit error'),
+    'hitscore': ('analysis', 'hitscore - ' + c2x2_key)
+}
+if do_online:
+    recorddir = '/reg/neh/home/benedikt/cxi86715/online/hits/'
+else:
+    recorddir = '/reg/neh/home/benedikt/cxi86715/offline/hits/'
+recorder = analysis.recorder.Recorder(recorddir, recordlist, ipc.mpi.rank, maxEvents=1000, xtc=(not do_online))
+    
 # Plotting
 # --------
 # Radial averages
 radial_tracelen = 100
 
 # Injector position limits
-x_min = -2.5
-x_max = -2.1
-x_bins = 40
+x_min = -3
+x_max = -1
+x_bins = 100
 y_min = -40
 y_max = -35
 y_bins = 100
-z_min = -6.6
-z_max = -6.2
-z_bins = 40
+z_min = -6.5
+z_max = -4.5
+z_bins = 100
 
 # Hitrate mean map 
 hitrateMeanMapParams = {
@@ -285,19 +306,30 @@ def onEvent(evt):
     if miss or bgall:
         #print "MISS (hit score %i < %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         # COLLECTING BACKGROUND
-        # Update background buffer
+        # Update
         bg.add(evt[c2x2_type][c2x2_key].data)
-        # Write background to file
+        # Reduce
+        bg.reduce()
+        # Write to file
         bg.write(evt,directory=bg_dir)
         
     if hit:
         print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + c2x2_key].data, hitscoreThreshold)
         good_hit = False
         if do_sizing:
-            # CMC
-            analysis.pixel_detector.cmc(evt, c2x2_type, c2x2_key, mask=beamstops_c2x2)
-            c2x2_type_s = "analysis"
-            c2x2_key_s = "cmc - " + c2x2_key
+            if do_cmc:
+                # CMC
+                analysis.pixel_detector.cmc(evt, c2x2_type, c2x2_key, mask=beamstops_c2x2)
+                c2x2_type_s = "analysis"
+                c2x2_key_s = "cmc - " + c2x2_key            
+            if do_bgsub:
+                # Running background subtraction
+                analysis.pixel_detector.bgsub(evt, c2x2_type_s, c2x2_key_s, bg=bg.last_mean)
+                c2x2_type_s = "analysis"
+                c2x2_key_s = "bgsub - " + c2x2_key_s            
+            if not do_cmc and not do_bgsub:
+                c2x2_type_s = c2x2_type
+                c2x2_key_s = c2x2_key
             # RADIAL SPHERE FIT
             # Find the center of diffraction
             analysis.sizing.findCenter(evt, c2x2_type_s, c2x2_key_s, mask=mask_c2x2, **centerParams)
@@ -314,6 +346,10 @@ def onEvent(evt):
             if fit_succeeded:
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
+            backend.add_record(evt["analysis"], "analysis", "Good hit rate", float(good_hit))
+
+        # Record hits together with sizing results
+        recorder.append(evt)
                 
     # ------------------------ #
     # SEND RESULT TO INTERFACE #
@@ -379,6 +415,11 @@ def onEvent(evt):
         # Image of hit
         plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2 )      
 
+        if do_sizing:
+            if do_cmc or do_bgsub:
+                # Image of hit (cmc corrected)
+                plotting.image.plotImage(evt[c2x2_type_s][c2x2_key_s], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit (corrected)", vmin=vmin_c2x2, vmax=vmax_c2x2 )
+        
         if do_front:
             # Front detector image (central 4 asics) of hit
             #plotting.image.plotImage(evt[clarge_type][clarge_key])
