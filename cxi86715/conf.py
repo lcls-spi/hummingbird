@@ -105,11 +105,11 @@ y_front = numpy.array(utils.array.cheetahToSlacH5(G_front.y), dtype="int")
 
 # Hit finding
 # -----------
-aduThreshold = 50
+aduThreshold = 25
 if do_online:
     #hitscoreThreshold = 20
     #hitscoreThreshold = 4500
-    hitscoreThreshold = 2000
+    hitscoreThreshold = 350
     hitscoreDark = 20
 else:
     hitscoreThreshold =  0
@@ -118,8 +118,8 @@ else:
 # Sizing
 # ------
 centerParams = {
-    'x0'       : 256 - (nx_c2x2-1)/2.,
-    'y0'       : 217 - (ny_c2x2-1)/2.,
+    'x0'       : 242 - (nx_c2x2-1)/2.,
+    'y0'       : 212 - (ny_c2x2-1)/2.,
     'maxshift' : 50,
     'threshold': 0.5,
     'blur'     : 4,
@@ -146,7 +146,7 @@ diameter_error_max   = 30
 # ----------
 bgall = False
 Nbg   = 100
-rbg   = 500
+rbg   = 1000
 obg   = 500
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg)
 if cxiopr:
@@ -180,8 +180,8 @@ x_bins = 50
 y_min = -40
 y_max = -35
 y_bins = 100
-z_min = -6.5
-z_max = -4.5
+z_min = -7
+z_max = -5
 z_bins = 50
 
 # Hitrate mean map 
@@ -342,7 +342,7 @@ def onEvent(evt):
             # Calculate diffraction pattern from fit result 
             analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_c2x2,nx_c2x2), poisson=False, **modelParams)
             # Calculate radial average of diffraction pattern from fit result
-            analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
+            analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)
             # Decide whether or not the fit was successful
             fit_succeeded = evt["analysis"]["fit error"].data < fit_error_threshold
             if fit_succeeded:
@@ -354,12 +354,12 @@ def onEvent(evt):
         recorder.append(evt)
                 
     # ------------------------ #
-    # SEND RESULT TO INTERFACE #
+    # Send RESULT TO INTERFACE #
     # ------------------------ #
 
     # Send stuf from particle stream
     if doing_camera:
-        plotting.line.plotHistogram(evt["analysis"]["particlestream"], log10=True, hmin=1, hmax=8, bins=1000)
+        plotting.line.plotHistogram(evt["analysis"]["particlestream"], log10=True, hmin=1, hmax=8, bins=100)
         plotting.image.plotImage(evt["image"]["Sc2Questar[image]"], msg="")
         plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
@@ -369,17 +369,6 @@ def onEvent(evt):
     
     # Pulse Energy
     # plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
-    
-    # HITFINDING
-    # Keep hit history for hitrate plots
-    plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key])
-    # Keep hitscore history
-    plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
-
-    # PHOTON COUNTING
-    # Keep history of number of photons on the back
-    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
-
 
     # Injector position (z is along the beam, x is across the beam)
     x = evt["parameters"][injector_x_key]
@@ -388,6 +377,18 @@ def onEvent(evt):
     plotting.line.plotHistory(x)
     #plotting.line.plotHistory(y)
     plotting.line.plotHistory(z)
+    
+    # HITFINDING
+    # Keep hit history for hitrate plots
+    plotting.line.plotHistory(evt["analysis"]["isHit - " + c2x2_key])
+    # Plot MeanMap of hitrate(y,z)
+    #plotting.correlation.plotMeanMap(x, z, evt["analysis"]["hitscore - " + ]], plotid='hitrateMeanMap', **hitrateMeanMapParams)
+    # Keep hitscore history
+    plotting.line.plotHistory(evt["analysis"]["hitscore - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
+
+    # PHOTON COUNTING
+    # Keep history of number of photons on the back
+    plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key], runningHistogram=True, hmin=hitscoreThreshold-100, hmax=hitscoreThreshold+100, bins=100, window=100, history=1000)
 
     # Nr. of photons 
     plotting.line.plotHistory(evt["analysis"]["nrPhotons - " + c2x2_key])
@@ -395,15 +396,12 @@ def onEvent(evt):
     if do_front:
         plotting.line.plotHistory(evt["analysis"]["nrPhotons - central4Asics"])
 
-    # Plot MeanMap of hitrate(y,z)
-    plotting.correlation.plotMeanMap(x, z, hit, plotid='hitrateMeanMap', **hitrateMeanMapParams)
-
     # Plot ScatterPlot with colored hitscore
     #plotting.correlation.plotScatterColor(x,z, evt["analysis"]["hitscore - " + c2x2_key], plotid='hitscoreScatter', vmin=0, vmax=2000, xlabel='Injector X', ylabel='Injectory Z', zlabel='Hitscore')
 
     if do_showall:        
         # Image of back detector for all events
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", name="Cspad 2x2: All", vmin=vmin_c2x2, vmax=vmax_c2x2)
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: All", vmin=vmin_c2x2, vmax=vmax_c2x2)
         # Histogram of detector for all events
         plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], mask=mask_c2x2, hmin=-100, hmax=100, bins=200, label='Cspad 2x2 pixel value [ADU]')
     plotting.correlation.plotMeanMap(evt["analysis"]["averagePulseEnergy"], evt["analysis"]["nrPhotons - central4Asics"], hit)
@@ -411,11 +409,14 @@ def onEvent(evt):
     
     if hit:
 
+        # Scatter plot of hitscore vs. injector in Z
+        plotting.correlation.plotScatter(z, evt["analysis"]["hitscore - " + c2x2_key], plotid='tuneInjection', history=10000, xlabel='Injector in Z', ylabel='Hitscore')  
+        
         # ToF
         plotting.line.plotTrace(evt["ionTOFs"]["Acqiris 0 Channel 1"]) 
         
         # Image of hit
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2 )      
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg='', name="Cspad 2x2: Hit", vmin=vmin_c2x2, vmax=vmax_c2x2 )      
 
         if do_sizing:
             if do_cmc or do_bgsub:
@@ -432,7 +433,8 @@ def onEvent(evt):
         if do_sizing:
 
             # Image of fit
-            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Cspad 2x2: Fit result (radial sphere fit)", vmin=vmin_c2x2, vmax=vmax_c2x2, msg='' %evt["analysis"]["diameter"].data)
+            msg = "diameter: %.2f nm \nIntensity: %.2f mJ/um2" %(evt["analysis"]["diameter"].data, evt["analysis"]["intensity"].data)
+            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_c2x2, name="Cspad 2x2: Fit result (radial sphere fit)", vmin=vmin_c2x2, vmax=vmax_c2x2, msg=msg)
             
             # Plot measurement radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - "+c2x2_key_s], evt["analysis"]["radial distance - "+c2x2_key_s],tracelen=radial_tracelen)
