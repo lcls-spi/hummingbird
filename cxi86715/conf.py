@@ -289,9 +289,9 @@ def onEvent(evt):
 
     # CAMERA
     doing_camera = False
-    if do_camera and "Sc2Questar[image]" in evt["image"]:        
-        analysis.injection_camera.getMaskedParticles(evt, "image", "Sc2Questar[image]", "maskedcamera", minX = 200, maxX = 1300, thresh = 30)
-        analysis.injection_camera.countContours(evt, "image", "Sc2Questar[image]", "maskedcamera", "coloredmask", "particlestream")
+    if do_camera and "Sc2Questar[camimage]" in evt["camimage"]:        
+        analysis.injection_camera.getMaskedParticles(evt, "camimage", "Sc2Questar[camimage]", "maskedcamera", minX = 200, maxX = 1300, thresh = 30)
+        analysis.injection_camera.countContours(evt, "image", "Sc2Questar[camimage]", "maskedcamera", "coloredmask", "particlestream")
         doing_camera = True
 
     # COUNT PHOTONS
@@ -359,8 +359,8 @@ def onEvent(evt):
 
     # Send stuf from particle stream
     if doing_camera:
-        plotting.line.plotHistogram(evt["analysis"]["particlestream"], log10=True, hmin=1, hmax=8, bins=100)
-        plotting.image.plotImage(evt["image"]["Sc2Questar[image]"], msg="")
+        plotting.line.plotHistogram(evt["analysis"]["particlestream"], log10=True, hmin=1, hmax=8, bins=1000)
+        plotting.image.plotImage(evt["camimage"]["Sc2Questar[camimage]"], msg="")
         plotting.image.plotImage(evt["analysis"]["maskedcamera"], msg="", name="Masked Opal image")                                                                
 
     # If not miss or hit, probably dark run -> do not send anything
