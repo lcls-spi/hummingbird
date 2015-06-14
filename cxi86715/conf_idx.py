@@ -54,34 +54,51 @@ state['Facility'] = 'LCLS'
 run_nr = int(os.environ["HUMMINGBIRD_RUN"])
 print run_nr
 run = "%04i" % run_nr
-# Read times and fiducials from text file
-idx_file = '/reg/neh/home/ksa47/convert/data/brights_%s.dat' % run
 # Fit results
 fitres_file = this_dir + "/fitres/fitres_%s.h5" % run
-with open(idx_file, "r") as fp:
-    lines = fp.readlines()
-    state['times'] = []
-    state['fiducials'] = []
-    for l in lines:
-        state['times'].append(int(l.split("\t")[0]))
-        state['fiducials'].append(int(l.split("\t")[1][:-len("\r\n")]))
-    # Create fitres file
-    with h5py.File(fitres_file, "w") as f:
-        N = len(state["times"])
-        f["/data/diameter_nm"] = numpy.zeros(N)
-        f["/data/diameter_nm"].attrs.modify("axes", ["experiment_identifier:x"])
-        f["/data/error"]   = numpy.zeros(N)
-        f["/data/error"].attrs.modify("axes", ["experiment_identifier:x"])
-        f["/data/intensity_mJ_um2"] = numpy.zeros(N)
-        f["/data/intensity_mJ_um2"].attrs.modify("axes", ["experiment_identifier:x"])
-        f["/data/img_fit"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
-        f["/data/img_fit"].attrs.modify("axes", ["experiment_identifier:y:x"])
-        f["/data/img_data"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
-        f["/data/img_data"].attrs.modify("axes", ["experiment_identifier:y:x"])
+# Read times and fiducials from text file
+#try:
+if True:
+    idx_file = '/reg/neh/home/ksa47/convert/data/brights_%s.dat' % run
+    with open(idx_file, "r") as fp:
+        lines = fp.readlines()
+        state['times'] = []
+        state['fiducials'] = []
+        for l in lines:
+            state['times'].append(int(l.split("\t")[0]))
+            fid = l.split("\t")[1]
+            if fid[-len("\r\n"):] == "\r\n":
+                fid = fid[:-len("\r\n")]
+            state['fiducials'].append(int(fid))
+        # Create fitres file
+        with h5py.File(fitres_file, "w") as f:
+            N = len(state["times"])
+            f["/data/diameter_nm"] = numpy.zeros(N)
+            f["/data/diameter_nm"].attrs.modify("axes", ["experiment_identifier:x"])
+            f["/data/error"]   = numpy.zeros(N)
+            f["/data/error"].attrs.modify("axes", ["experiment_identifier:x"])
+            f["/data/intensity_mJ_um2"] = numpy.zeros(N)
+            f["/data/intensity_mJ_um2"].attrs.modify("axes", ["experiment_identifier:x"])
+            f["/data/img_fit"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
+            f["/data/img_fit"].attrs.modify("axes", ["experiment_identifier:y:x"])
+            f["/data/img_data"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
+            f["/data/img_data"].attrs.modify("axes", ["experiment_identifier:y:x"])
+            f["/data/timestamp"] = numpy.zeros(shape=(N,), dtype="int64")
+            f["/data/timestamp"].attrs.modify("axes", ["experiment_identifier:x"])
+            f["/data/fiducial"] = numpy.zeros(shape=(N,), dtype="int64")
+            f["/data/fiducial"].attrs.modify("axes", ["experiment_identifier:x"])
+            f["/data/hitscore"] = numpy.zeros(shape=(N,), dtype="int64")
+            f["/data/hitscore"].attrs.modify("axes", ["experiment_identifier:x"])
+
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=%s:idx' % run
+    do_write = True
+#except:
+else:
+    print "WARNING: Could not read file with times."
+    state['LCLS/DataSource'] = 'exp=cxi86715:run=%s' % run
+    do_write = False
 
 i_fitres = 0
-
-state['LCLS/DataSource'] = 'exp=cxi86715:run=%s:idx' % run
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
@@ -107,9 +124,9 @@ injector_z_key = "CXI:PI2:MMS:03.RBV"
 
 # Background
 # ----------
-bgall = True
-Nbg   = 10
-fbg   = 10
+bgall = False
+Nbg   = 100
+fbg   = 10000
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=fbg)
 bg_dir = this_dir + "/stack_idx"
 
@@ -135,12 +152,13 @@ modelParams = {
     'wavelength':0.1795,
     'pixelsize':110,
     'distance':2400,
-    'material':'virus',
+    'material':'water',
 }
 sizingParams = {
     'd0':100,
     'i0':1,
     'brute_evals':100,
+    'adu_per_photon':40,
 }
 
 # Classification
@@ -233,7 +251,7 @@ def onEvent(evt):
     #analysis.event.printID(evt["eventID"])
 
     # Send Fiducials and Timestamp
-    plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
+    #plotting.line.plotTimestamp(evt["eventID"]["Timestamp"])
     
     # -------- #
     # ANALYSIS #
@@ -291,15 +309,20 @@ def onEvent(evt):
                 # Decide whether or not this was a good hit, i.e. a hit in the expected size range
                 good_hit = abs(evt["analysis"]["diameter"].data - diameter_expected) <= diameter_error_max
 
-            # Write out info
-            global i_fitres
-            with h5py.File(fitres_file,"r+") as f:
-                f["/data/diameter_nm"][i_fitres] = evt["analysis"]["diameter"].data
-                f["/data/intensity_mJ_um2"][i_fitres] = evt["analysis"]["intensity"].data
-                f["/data/error"][i_fitres] = evt["analysis"]["fit error"].data
-                f["/data/img_fit"][i_fitres] = evt["analysis"]["fit"].data
-                f["/data/img_data"][i_fitres] = evt[c2x2_type][c2x2_key].data
-            i_fitres += 1
+            if do_write:
+                # Write out info
+                global i_fitres
+                with h5py.File(fitres_file,"r+") as f:
+                    f["/data/diameter_nm"][i_fitres] = evt["analysis"]["diameter"].data
+                    f["/data/intensity_mJ_um2"][i_fitres] = evt["analysis"]["intensity"].data
+                    f["/data/error"][i_fitres] = evt["analysis"]["fit error"].data
+                    f["/data/img_fit"][i_fitres] = evt["analysis"]["fit"].data
+                    f["/data/img_data"][i_fitres] = evt[c2x2_type][c2x2_key].data
+                    f["/data/timestamp"][i_fitres] = evt["eventID"]["Timestamp"].lcls_time
+                    f["/data/fiducial"][i_fitres] = evt["eventID"]["Timestamp"].fiducials
+                    f["/data/hitscore"][i_fitres] = evt["analysis"]["hitscore - " + c2x2_key].data
+
+                i_fitres += 1
     # ------------------------ #
     # SEND RESULT TO INTERFACE #
     # ------------------------ #
