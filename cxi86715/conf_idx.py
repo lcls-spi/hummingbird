@@ -54,11 +54,10 @@ state['Facility'] = 'LCLS'
 run_nr = int(os.environ["HUMMINGBIRD_RUN"])
 print run_nr
 run = "%04i" % run_nr
-# Fit results
-fitres_file = this_dir + "/fitres/fitres_%s.h5" % run
-# Read times and fiducials from text file
+state['LCLS/DataSource'] = 'exp=cxi86715:run=%s:idx' % run
 
 do_brights = False
+do_write = True
 
 #try:
 if do_brights:
@@ -73,11 +72,6 @@ if do_brights:
             if fid[-len("\r\n"):] == "\r\n":
                 fid = fid[:-len("\r\n")]
             state['fiducials'].append(int(fid))
-    #else:
-    #print "WARNING: Could not read file with times."
-    #state['LCLS/DataSource'] = 'exp=cxi86715:run=%s' % run
-    #do_write = False
-
 else:
     state["times"] = []
     state["fiducials"] = []
@@ -89,35 +83,30 @@ else:
             if m.sum() > 0:
                 state["times"] += list(f["timestamp"][m])
                 state["fiducials"] += list(f["fiducial"][m])
-                break
-                
-    
-            # Create fitres file
-with h5py.File(fitres_file, "w") as f:
-    N = len(state["times"])
-    f["/data/diameter_nm"] = numpy.zeros(N)
-    f["/data/diameter_nm"].attrs.modify("axes", ["experiment_identifier:x"])
-    f["/data/error"]   = numpy.zeros(N)
-    f["/data/error"].attrs.modify("axes", ["experiment_identifier:x"])
-    f["/data/intensity_mJ_um2"] = numpy.zeros(N)
-    f["/data/intensity_mJ_um2"].attrs.modify("axes", ["experiment_identifier:x"])
-    f["/data/img_fit"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
-    f["/data/img_fit"].attrs.modify("axes", ["experiment_identifier:y:x"])
-    f["/data/img_data"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
-    f["/data/img_data"].attrs.modify("axes", ["experiment_identifier:y:x"])
-    f["/data/timestamp"] = numpy.zeros(shape=(N,), dtype="int64")
-    f["/data/timestamp"].attrs.modify("axes", ["experiment_identifier:x"])
-    f["/data/fiducial"] = numpy.zeros(shape=(N,), dtype="int64")
-    f["/data/fiducial"].attrs.modify("axes", ["experiment_identifier:x"])
-    f["/data/hitscore"] = numpy.zeros(shape=(N,), dtype="int64")
-    f["/data/hitscore"].attrs.modify("axes", ["experiment_identifier:x"])
-    f["/data/mask"] = 1-mask_c2x2
-    #f["/data/mask"].attrs.modify("axes", ["y:x"])
-    state['LCLS/DataSource'] = 'exp=cxi86715:run=%s:idx' % run
-    do_write = True
-#except:
 
-i_fitres = 0
+if do_write:    
+    fitres_file = this_dir + "/fitres/fitres_%s.h5" % run
+    # Create fitres file
+    with h5py.File(fitres_file, "w") as f:
+        N = len(state["times"])
+        f["/data/diameter_nm"] = numpy.zeros(N)
+        f["/data/diameter_nm"].attrs.modify("axes", ["experiment_identifier:x"])
+        f["/data/error"]   = numpy.zeros(N)
+        f["/data/error"].attrs.modify("axes", ["experiment_identifier:x"])
+        f["/data/intensity_mJ_um2"] = numpy.zeros(N)
+        f["/data/intensity_mJ_um2"].attrs.modify("axes", ["experiment_identifier:x"])
+        f["/data/img_fit"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
+        f["/data/img_fit"].attrs.modify("axes", ["experiment_identifier:y:x"])
+        f["/data/img_data"] = numpy.zeros(shape=(N,ny_c2x2,nx_c2x2), dtype="int32")
+        f["/data/img_data"].attrs.modify("axes", ["experiment_identifier:y:x"])
+        f["/data/timestamp"] = numpy.zeros(shape=(N,), dtype="int64")
+        f["/data/timestamp"].attrs.modify("axes", ["experiment_identifier:x"])
+        f["/data/fiducial"] = numpy.zeros(shape=(N,), dtype="int64")
+        f["/data/fiducial"].attrs.modify("axes", ["experiment_identifier:x"])
+        f["/data/hitscore"] = numpy.zeros(shape=(N,), dtype="int64")
+        f["/data/hitscore"].attrs.modify("axes", ["experiment_identifier:x"])
+        f["/data/mask"] = 1-mask_c2x2
+        i_fitres = 0
 
 if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
