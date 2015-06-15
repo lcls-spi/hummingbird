@@ -109,7 +109,7 @@ aduThreshold = 25
 if do_online:
     #hitscoreThreshold = 20
     #hitscoreThreshold = 4500
-    hitscoreThreshold = 350
+    hitscoreThreshold = 400
     hitscoreDark = 20
 else:
     hitscoreThreshold =  0
@@ -138,7 +138,7 @@ sizingParams = {
 
 # Classification
 # --------------
-fit_error_threshold  = 0.00085
+fit_error_threshold  = 0.5
 diameter_expected    = 70
 diameter_error_max   = 30
 
@@ -146,8 +146,8 @@ diameter_error_max   = 30
 # ----------
 bgall = False
 Nbg   = 100
-rbg   = 1000
-obg   = 500
+rbg   = 5000
+obg   = 5000
 bg = analysis.stack.Stack(name="bg",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg)
 if cxiopr:
     bg_dir = "/reg/neh/home/hantke/cxi86715_scratch/stack/"
@@ -368,7 +368,7 @@ def onEvent(evt):
     #    return 
     
     # Pulse Energy
-    # plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
+    plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
 
     # Injector position (z is along the beam, x is across the beam)
     x = evt["parameters"][injector_x_key]
@@ -377,6 +377,10 @@ def onEvent(evt):
     plotting.line.plotHistory(x)
     #plotting.line.plotHistory(y)
     plotting.line.plotHistory(z)
+
+    # Injector pressures
+    p1 = evt["parameters"]["CXI:SDS:REG:01:PRESS"]
+    p2 = evt["parameters"]["CXI:SDS:REG:02:PRESS"]
     
     # HITFINDING
     # Keep hit history for hitrate plots
@@ -401,16 +405,23 @@ def onEvent(evt):
 
     if do_showall:        
         # Image of back detector for all events
-        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", mask=mask_c2x2, name="Cspad 2x2: All", vmin=vmin_c2x2, vmax=vmax_c2x2)
+        plotting.image.plotImage(evt[c2x2_type][c2x2_key], msg="", name="Cspad 2x2: All", mask=mask_c2x2, vmin=vmin_c2x2, vmax=vmax_c2x2)
         # Histogram of detector for all events
         plotting.line.plotHistogram(evt[c2x2_type][c2x2_key], mask=mask_c2x2, hmin=-100, hmax=100, bins=200, label='Cspad 2x2 pixel value [ADU]')
-    plotting.correlation.plotMeanMap(evt["analysis"]["averagePulseEnergy"], evt["analysis"]["nrPhotons - central4Asics"], hit)
-    plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
+   
+    # THIS HERE CAUSED A CRASH
+    #plotting.correlation.plotMeanMap(evt["analysis"]["averagePulseEnergy"], evt["analysis"]["nrPhotons - central4Asics"], hit)
+    #plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
     
     if hit:
 
         # Scatter plot of hitscore vs. injector in Z
-        plotting.correlation.plotScatter(z, evt["analysis"]["hitscore - " + c2x2_key], plotid='tuneInjection', history=10000, xlabel='Injector in Z', ylabel='Hitscore')  
+        plotting.correlation.plotScatter(x, evt["analysis"]["hitscore - " + c2x2_key], plotid='tuneInjectionX', history=10000, xlabel='Injector in X', ylabel='Hitscore')  
+        plotting.correlation.plotScatter(z, evt["analysis"]["hitscore - " + c2x2_key], plotid='tuneInjectionZ', history=10000, xlabel='Injector in Z', ylabel='Hitscore')  
+        
+        # Scatter plot for hitscore vs. injector pressure
+        plotting.correlation.plotScatter(p1, evt["analysis"]["hitscore - " + c2x2_key], plotid='tuneInjectionP1', history=10000, xlabel='Injector in X', ylabel='Hitscore')  
+        plotting.correlation.plotScatter(p2, evt["analysis"]["hitscore - " + c2x2_key], plotid='tuneInjectionP2', history=10000, xlabel='Injector in Z', ylabel='Hitscore')  
         
         # ToF
         plotting.line.plotTrace(evt["ionTOFs"]["Acqiris 0 Channel 1"]) 
@@ -421,7 +432,7 @@ def onEvent(evt):
         if do_sizing:
             if do_cmc or do_bgsub:
                 # Image of hit (cmc corrected)
-                plotting.image.plotImage(evt[c2x2_type_s][c2x2_key_s], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit (corrected)", vmin=vmin_c2x2, vmax=vmax_c2x2 )
+                plotting.image.plotImage(evt[c2x2_type_s][c2x2_key_s], msg="", mask=mask_c2x2, name="Cspad 2x2: Hit (corrected)", vmin=vmin_c2x2, vmax=vmax_c2x2)
         
         if do_front:
             # Front detector image (central 4 asics) of hit
