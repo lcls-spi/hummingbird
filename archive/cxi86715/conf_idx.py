@@ -326,7 +326,7 @@ def onEvent(evt):
                     f["/data/error"][i_fitres] = evt["analysis"]["fit error"].data
                     f["/data/img_fit"][i_fitres] = evt["analysis"]["fit"].data
                     f["/data/img_data"][i_fitres] = evt[c2x2_type][c2x2_key].data
-                    f["/data/timestamp"][i_fitres] = evt["eventID"]["Timestamp"].lcls_time
+                    f["/data/timestamp"][i_fitres] = evt["eventID"]["Timestamp"].timestamp2
                     f["/data/fiducial"][i_fitres] = evt["eventID"]["Timestamp"].fiducials
                     f["/data/hitscore"][i_fitres] = evt["analysis"]["hitscore - " + c2x2_key].data
 
