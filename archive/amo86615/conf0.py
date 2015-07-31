@@ -18,7 +18,8 @@ do_cmc = True
 # ---------------------------------------------------------
 state = {}
 state['Facility'] = 'LCLS'
-state['LCLS/DataSource'] = 'exp=amo86615:run=3'
+#state['LCLS/DataSource'] = 'exp=amo86615:run=3'
+state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
 state['LCLS/PsanaConf'] = 'psana_cfg/pnccd.cfg'
 
 front_type = "image"
@@ -58,7 +59,7 @@ def onEvent(evt):
     # ------------------- #
 
     # Time measurement
-    #analysis.event.printProcessingRate()
+    analysis.event.printProcessingRate()
     #analysis.event.printID(evt["eventID"])
     #print evt["photonPixelDetectors"].keys()
     #from IPython.core.debugger import Tracer
@@ -84,8 +85,8 @@ def onEvent(evt):
                              msg='', name="pnCCD front", vmin=0, vmax=10000, mask=mask_front)     
     plotting.image.plotImage(evt[back_type_s][back_key_s], 
                              msg='', name="pnCCD back", vmin=0, vmax=10000, mask=mask_back)     
-    print evt[front_type][front_key].data.shape
-    print evt[back_type][back_key].data.shape
+    #print evt[front_type][front_key].data.shape
+    #print evt[back_type][back_key].data.shape
 
     # COLLECTING BACKGROUND
     if do_stacks:
