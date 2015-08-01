@@ -66,7 +66,7 @@ if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
 else:
     state['LCLS/PsanaConf'] = 'psana_cfg/cspad2x2.cfg'
-
+print state
 # CSPAD 2x2
 # ---------
 c2x2_type = "image"
@@ -342,7 +342,7 @@ def onEvent(evt):
             # Calculate diffraction pattern from fit result 
             analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_c2x2,nx_c2x2), poisson=False, **modelParams)
             # Calculate radial average of diffraction pattern from fit result
-            analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)
+            analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["offCenterX"].data, cy=evt["analysis"]["offCenterY"].data)
             # Decide whether or not the fit was successful
             fit_succeeded = evt["analysis"]["fit error"].data < fit_error_threshold
             if fit_succeeded:
