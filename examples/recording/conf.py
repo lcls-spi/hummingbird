@@ -66,7 +66,7 @@ if do_front:
     state['LCLS/PsanaConf'] = 'psana_cfg/both_cspads.cfg'
 else:
     state['LCLS/PsanaConf'] = 'psana_cfg/cspad2x2.cfg'
-print state
+
 # CSPAD 2x2
 # ---------
 c2x2_type = "image"
@@ -351,6 +351,7 @@ def onEvent(evt):
             backend.add_record(evt["analysis"], "analysis", "Good hit rate", float(good_hit))
 
         # Record hits together with sizing results
+		recorder.setup_file_if_needed(evt)
         recorder.append(evt)
                 
     # ------------------------ #
