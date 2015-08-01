@@ -3,12 +3,10 @@ import analysis.event
 import analysis.stack
 import analysis.pixel_detector
 import analysis.hitfinding
-import analysis.recorder
 import plotting.image
 import plotting.line
 import utils.reader
 import os,sys
-import ipc
 this_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_dir)
 
@@ -24,8 +22,9 @@ do_cmc = True
 # ---------------------------------------------------------
 state = {}
 state['Facility'] = 'LCLS'
-state['LCLS/DataSource'] = 'exp=amo86615:run=17'
-state['LCLS/PsanaConf'] = 'psana_cfg/pnccd.cfg'
+#state['LCLS/DataSource'] = 'exp=amo86615:run=3'
+state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
+state['LCLS/PsanaConf'] = this_dir + 'psana_cfg/pnccd.cfg'
 
 front_type = "image"
 front_key  = "pnccdFront[%s]" % front_type
@@ -52,15 +51,6 @@ mask_back = M_back.boolean_mask
 M_front    = utils.reader.MaskReader(this_dir + "/mask/mask_front.h5","/data/data")
 mask_front = M_front.boolean_mask
 (ny_front,nx_front) = mask_front.shape
-
-# Recording
-# ---------
-stuff_to_record = {
-    'hitscore_back': ('analysis', 'hitscore - ' + back_key),
-    #'hitscore_front': ('analysis', 'hitscore - ' + front_key)
-}
-recorder_dir = "/reg/d/psdm/amo/amo86615/scratch/hummingbird/offline_hits"
-recorder = analysis.recorder.Recorder(recorder_dir, stuff_to_record, ipc.mpi.rank, maxEvents = 100000)
 
 # ---------------------------------------------------------
 # E V E N T   C A L L
@@ -121,8 +111,6 @@ def onEvent(evt):
                                  msg='', name="pnCCD front (hit)", vmin=0, vmax=10000, mask=mask_front)     
         plotting.image.plotImage(evt[back_type_s][back_key_s], 
                                  msg='', name="pnCCD back (hit)", vmin=0, vmax=10000, mask=mask_back) 
-        # Record time stamps and other metadata for hits
-        recorder.append(evt)
 
     plotting.image.plotImage(evt[front_type_s][front_key_s], 
                              msg='', name="pnCCD front", vmin=0, vmax=10000, mask=mask_front)     
