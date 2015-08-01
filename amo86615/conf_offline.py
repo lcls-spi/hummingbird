@@ -25,7 +25,7 @@ do_cmc = True
 state = {}
 state['Facility'] = 'LCLS'
 state['LCLS/DataSource'] = 'exp=amo86615:run=17'
-state['LCLS/PsanaConf'] = 'psana_cfg/pnccd.cfg'
+state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/pnccd.cfg'
 
 front_type = "image"
 front_key  = "pnccdFront[%s]" % front_type
