@@ -342,7 +342,7 @@ def onEvent(evt):
             # Calculate diffraction pattern from fit result 
             analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_c2x2,nx_c2x2), poisson=False, **modelParams)
             # Calculate radial average of diffraction pattern from fit result
-            analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["offCenterX"].data, cy=evt["analysis"]["offCenterY"].data)
+            analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_c2x2, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)
             # Decide whether or not the fit was successful
             fit_succeeded = evt["analysis"]["fit error"].data < fit_error_threshold
             if fit_succeeded:
