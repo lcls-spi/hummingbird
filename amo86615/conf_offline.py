@@ -7,6 +7,7 @@ import analysis.hitfinding
 import analysis.recorder
 import plotting.image
 import plotting.line
+import plotting.correlation
 import utils.reader
 import os,sys
 import ipc
@@ -23,20 +24,30 @@ do_cmc      = True
 do_showall  = True
 show_prop = 0.01
 
-
 # ---------------------------------------------------------
 # P S A N A
 # ---------------------------------------------------------
 state = {}
 state['Facility'] = 'LCLS'
 state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/pnccd.cfg'
-state['LCLS/DataSource'] = 'exp=amo86615:run=17'
+state['LCLS/DataSource'] = 'exp=amo86615:run=21'
 
+# PNCCD
+# -----
 front_type = "image"
 front_key  = "pnccdFront[%s]" % front_type
-
 back_type = "image"
 back_key  = "pnccdBack[%s]" % back_type
+
+# INJECTOR MOTORS
+# ---------------
+injector_x_key = "AMO:PPL:MMS:07"
+injector_y_key = "AMO:PPL:MMS:08"
+injector_z_key = "AMO:PPL:MMS:09"
+
+# ---------------------------------------------------------
+# I/O
+# ---------------------------------------------------------
 
 # Backgrounds
 # -----------
@@ -66,6 +77,33 @@ stuff_to_record = {
 }
 recorder_dir = "/reg/d/psdm/amo/amo86615/scratch/hummingbird/offline_hits"
 recorder = analysis.recorder.Recorder(recorder_dir, stuff_to_record, ipc.mpi.rank, maxEvents = 100000)
+
+# ---------------------------------------------------------
+# PLOTTING PARAMETER
+# ---------------------------------------------------------
+
+# Injector position limits
+x_min = -3
+x_max = -1
+x_bins = 50
+y_min = -40
+y_max = -35
+y_bins = 100
+z_min = -7
+z_max = -5
+z_bins = 50
+
+# Hitrate mean map 
+hitrateMeanMapParams = {
+    'xmin': x_min,
+    'xmax': x_max,
+    'ymin': z_min,
+    'ymax': z_max,
+    'xbins': x_bins,
+    'ybins': z_bins,
+    'xlabel': 'Injector Position in x',
+    'ylabel': 'Injector Position in z'  
+}
 
 # ---------------------------------------------------------
 # E V E N T   C A L L
@@ -163,6 +201,20 @@ def onEvent(evt):
 
     # Plot the hitrate
     plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
+
+    
+
+    # Plot MeanMap of hitrate(y,z)
+    if False:
+        # TESTING
+        x = x_min + numpy.random.rand() * (x_max-x_min)
+        add_record(evt["analysis"], "analysis", "x", x, unit='')
+        x = evt["analysis"]["x"]
+        z = z_min + numpy.random.rand() * (z_max-z_min)
+        add_record(evt["analysis"], "analysis", "z", z, unit='')
+        z = evt["analysis"]["z"]
+        h =  float(numpy.random.randint(2))
+        plotting.correlation.plotMeanMap(x, z, h, plotid='hitrateMeanMap', **hitrateMeanMapParams)
 
     # Pulse Energy
     #plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
