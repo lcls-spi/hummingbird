@@ -29,7 +29,7 @@ show_prop = 0.01
 # ---------------------------------------------------------
 state = {}
 state['Facility'] = 'LCLS'
-state['LCLS/PsanaConf'] = '/reg/neh/operator/amoopr/amo86615/hummingbird/archive/amo86615/psana_cfg/pnccd.cfg'
+state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/pnccd.cfg'
 state['LCLS/DataSource'] = 'exp=amo86615:run=17'
 
 front_type = "image"
