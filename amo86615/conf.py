@@ -94,7 +94,8 @@ def onEvent(evt):
         front_key_s = front_key
 
     # Simple hitfinding (Count Nr. of lit pixels)
-    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=1600, hitscoreThreshold=500, hitscoreMax=50000, mask=mask_back)
+    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=100, hitscoreThreshold=1500, hitscoreMax=4500, mask=mask_back)
+    #analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=1600, hitscoreThreshold=1500, hitscoreMax=4500, mask=mask_back)
 
     # Compute the hitrate
     analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - " + back_key], history=10000)
@@ -119,7 +120,7 @@ def onEvent(evt):
         plotting.image.plotImage(evt[back_type_s][back_key_s], 
                                  msg='', name="pnCCD back (hit)", vmin=0, vmax=10000, mask=mask_back) 
 
-    if numpy.random.rand() < 0.1 and rank > 5:
+    if numpy.random.rand() < 0.05 and rank > 5:
         plotting.image.plotImage(evt[front_type_s][front_key_s], 
                                  msg='', name="pnCCD front", vmin=0, vmax=10000, mask=mask_front)     
         plotting.image.plotImage(evt[back_type_s][back_key_s], 
