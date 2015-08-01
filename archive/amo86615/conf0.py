@@ -1,3 +1,4 @@
+import numpy
 import time
 import analysis.event
 import analysis.stack
@@ -13,9 +14,13 @@ sys.path.append(this_dir)
 from backend import add_record
 
 # Collect and write out stacks of frames
-do_stacks = False
+do_stacks   = False
 # Common mode correction along fastest changing dimension
-do_cmc = True
+do_cmc      = True
+# Send all events to the frontend
+do_showall  = True
+show_prop = 0.01
+
 
 # ---------------------------------------------------------
 # P S A N A
@@ -24,7 +29,7 @@ state = {}
 state['Facility'] = 'LCLS'
 #state['LCLS/DataSource'] = 'exp=amo86615:run=3'
 state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
-state['LCLS/PsanaConf'] = 'psana_cfg/pnccd.cfg'
+state['LCLS/PsanaConf'] = '/reg/neh/operator/amoopr/amo86615/hummingbird/archive/amo86615/psana_cfg/pnccd.cfg'
 
 front_type = "image"
 front_key  = "pnccdFront[%s]" % front_type
@@ -72,6 +77,10 @@ def onEvent(evt):
     #print evt.keys()
     #evt["psana.PNCCD.FramesV1"]["DetInfo(Camp.0:pnCCD.0)"]
 
+    # -------------------- #
+    # DETECTOR CORRECTIONS #
+    # -------------------- #
+
     if do_cmc:
         # CMC
         analysis.pixel_detector.cmc_pnccd(evt, back_type, back_key)
@@ -85,39 +94,6 @@ def onEvent(evt):
         back_key_s = back_key
         front_type_s = front_type
         front_key_s = front_key
-
-    # Simple hitfinding (Count Nr. of lit pixels)
-    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=20, hitscoreThreshold=50, mask=mask_back)
-
-    # Compute the hitrate
-    analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - " + back_key], history=10000)
-    
-    # Plot the hitscore
-    #plotting.line.plotHistory(evt["analysis"]["hitscore - " + back_key], label='Nr. of lit pixels')
-    plotting.line.plotHistory(evt["analysis"]["hitscore - " + back_key], runningHistogram=True, hmin=0, hmax=100000, bins=100, window=100, history=1000)
-
-    # Plot the hitrate
-    plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
-
-
-    hit = evt["analysis"]["isHit - " + back_key]
-
-    # Pulse Energy
-    #plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
-
-    # Perform sizing on hits
-    if evt["analysis"]["isHit - " + back_key].data:
-        plotting.image.plotImage(evt[front_type_s][front_key_s], 
-                                 msg='', name="pnCCD front (hit)", vmin=0, vmax=10000, mask=mask_front)     
-        plotting.image.plotImage(evt[back_type_s][back_key_s], 
-                                 msg='', name="pnCCD back (hit)", vmin=0, vmax=10000, mask=mask_back) 
-
-    plotting.image.plotImage(evt[front_type_s][front_key_s], 
-                             msg='', name="pnCCD front", vmin=0, vmax=10000, mask=mask_front)     
-    plotting.image.plotImage(evt[back_type_s][back_key_s], 
-                             msg='', name="pnCCD back", vmin=0, vmax=10000, mask=mask_back)     
-    #print evt[front_type][front_key].data.shape
-    #print evt[back_type][back_key].data.shape
 
     # COLLECTING BACKGROUND
     if do_stacks:
@@ -133,23 +109,66 @@ def onEvent(evt):
 
 
         #print data
-        data = bg_front.mean()
-        bg_front_mean = add_record(evt["analysis"], "analysis", "pnCCD front (mean)", data, unit='')
-        plotting.image.plotImage(evt["analysis"]["pnCCD front (mean)"], 
-                                 msg='', name="pnCCD front (mean)", vmin=0, vmax=10000)     
-        data = bg_front.max()
-        bg_front_max = add_record(evt["analysis"], "analysis", "pnCCD front (max)", data, unit='')
-        plotting.image.plotImage(evt["analysis"]["pnCCD front (max)"], 
-                                 msg='', name="pnCCD front (max)", vmin=0, vmax=10000)     
+        #data = bg_front.mean()
+        #bg_front_mean = add_record(evt["analysis"], "analysis", "pnCCD front (mean)", data, unit='')
+        #plotting.image.plotImage(evt["analysis"]["pnCCD front (mean)"], 
+        #                         msg='', name="pnCCD front (mean)", vmin=0, vmax=10000)     
+        #data = bg_front.max()
+        #bg_front_max = add_record(evt["analysis"], "analysis", "pnCCD front (max)", data, unit='')
+        #plotting.image.plotImage(evt["analysis"]["pnCCD front (max)"], 
+        #                         msg='', name="pnCCD front (max)", vmin=0, vmax=10000)     
 
-        data = bg_back.mean()
-        bg_back_mean = add_record(evt["analysis"], "analysis", "pnCCD back (mean)", data, unit='')
-        plotting.image.plotImage(evt["analysis"]["pnCCD back (mean)"], 
-                                 msg='', name="pnCCD back (mean)", vmin=0, vmax=10000)     
+        #data = bg_back.mean()
+        #bg_back_mean = add_record(evt["analysis"], "analysis", "pnCCD back (mean)", data, unit='')
+        #plotting.image.plotImage(evt["analysis"]["pnCCD back (mean)"], 
+        #                         msg='', name="pnCCD back (mean)", vmin=0, vmax=10000)     
         data = bg_back.max()
         bg_back_max = add_record(evt["analysis"], "analysis", "pnCCD back (max)", data, unit='')
         plotting.image.plotImage(evt["analysis"]["pnCCD back (max)"], 
                                  msg='', name="pnCCD back (max)", vmin=0, vmax=10000)     
+
+        data = bg_back.sum()
+        bg_back_sum = add_record(evt["analysis"], "analysis", "pnCCD back (sum)", data, unit='')
+        plotting.image.plotImage(evt["analysis"]["pnCCD back (sum)"], 
+                                 msg='', name="pnCCD back (sum)", vmin=0, vmax=10000)     
+
+    # -------- #
+    # ANALYSIS #
+    # -------- #
+
+    # Simple hitfinding (Count Nr. of lit pixels)
+    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=1600, hitscoreThreshold=2000, hitscoreMax=500000, mask=mask_back)
+
+    # Compute the hitrate
+    analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - " + back_key], history=10000)
+    hit = evt["analysis"]["isHit - " + back_key].data
+    
+    # ------------------------ #
+    # Send RESULT TO INTERFACE #
+    # ------------------------ #
+
+    # Plot the hitscore
+    #plotting.line.plotHistory(evt["analysis"]["hitscore - " + back_key], label='Nr. of lit pixels')
+    plotting.line.plotHistory(evt["analysis"]["hitscore - " + back_key], runningHistogram=True, hmin=0, hmax=5000, bins=100, window=100, history=1000)
+
+    # Plot the hitrate
+    plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
+
+    # Pulse Energy
+    #plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
+
+    # Perform sizing on hits
+    if hit:
+        plotting.image.plotImage(evt[front_type_s][front_key_s], 
+                                 msg='', name="pnCCD front (hit)", vmin=0, vmax=10000, mask=mask_front)     
+        plotting.image.plotImage(evt[back_type_s][back_key_s], 
+                                 msg='', name="pnCCD back (hit)", vmin=0, vmax=10000, mask=mask_back) 
+    if do_showall and (numpy.random.rand() < show_prop):
+        plotting.image.plotImage(evt[front_type_s][front_key_s], 
+                                 msg='', name="pnCCD front", vmin=0, vmax=10000, mask=mask_front)     
+        plotting.image.plotImage(evt[back_type_s][back_key_s], 
+                                 msg='', name="pnCCD back", vmin=0, vmax=10000, mask=mask_back)     
+
 
 
     
