@@ -1,4 +1,4 @@
-import time
+import time, numpy
 import analysis.event
 import analysis.stack
 import analysis.pixel_detector
@@ -9,6 +9,7 @@ import utils.reader
 import os,sys
 this_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(this_dir)
+import ipc.mpi
 
 from backend import add_record
 
@@ -24,7 +25,7 @@ state = {}
 state['Facility'] = 'LCLS'
 #state['LCLS/DataSource'] = 'exp=amo86615:run=3'
 state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
-state['LCLS/PsanaConf'] = this_dir + 'psana_cfg/pnccd.cfg'
+state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/pnccd.cfg'
 
 front_type = "image"
 front_key  = "pnccdFront[%s]" % front_type
@@ -35,10 +36,12 @@ back_key  = "pnccdBack[%s]" % back_type
 # Backgrounds
 # -----------
 Nbg   = 100
-rbg   = 10
+rbg   = 100
 obg   = 10
-bg_front = analysis.stack.Stack(name="bg_front",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg)
-bg_back = analysis.stack.Stack(name="bg_back",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg)
+#stack_outputs = None
+stack_outputs = ["max","mean"]
+bg_front = analysis.stack.Stack(name="bg_front",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg,outputs=stack_outputs)
+bg_back = analysis.stack.Stack(name="bg_back",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg,outputs=stack_outputs)
 bg_dir = this_dir + "/stack"
 
 # Masks
@@ -57,6 +60,10 @@ mask_front = M_front.boolean_mask
 # ---------------------------------------------------------
 
 def onEvent(evt):
+
+    main_slave = ipc.mpi.is_main_slave()
+    rank = ipc.mpi.rank
+
 
     # ------------------- #
     # INITIAL DIAGNOSTICS #
@@ -87,7 +94,8 @@ def onEvent(evt):
         front_key_s = front_key
 
     # Simple hitfinding (Count Nr. of lit pixels)
-    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=20, hitscoreThreshold=50, mask=mask_back)
+    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=100, hitscoreThreshold=1500, hitscoreMax=4500, mask=mask_back)
+    #analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=1600, hitscoreThreshold=1500, hitscoreMax=4500, mask=mask_back)
 
     # Compute the hitrate
     analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - " + back_key], history=10000)
@@ -112,10 +120,11 @@ def onEvent(evt):
         plotting.image.plotImage(evt[back_type_s][back_key_s], 
                                  msg='', name="pnCCD back (hit)", vmin=0, vmax=10000, mask=mask_back) 
 
-    plotting.image.plotImage(evt[front_type_s][front_key_s], 
-                             msg='', name="pnCCD front", vmin=0, vmax=10000, mask=mask_front)     
-    plotting.image.plotImage(evt[back_type_s][back_key_s], 
-                             msg='', name="pnCCD back", vmin=0, vmax=10000, mask=mask_back)     
+    if numpy.random.rand() < 0.05 and rank > 5:
+        plotting.image.plotImage(evt[front_type_s][front_key_s], 
+                                 msg='', name="pnCCD front", vmin=0, vmax=10000, mask=mask_front)     
+        plotting.image.plotImage(evt[back_type_s][back_key_s], 
+                                 msg='', name="pnCCD back", vmin=0, vmax=10000, mask=mask_back)     
     #print evt[front_type][front_key].data.shape
     #print evt[back_type][back_key].data.shape
 
@@ -125,31 +134,38 @@ def onEvent(evt):
         bg_front.add(evt[front_type_s][front_key_s].data)
         bg_back.add(evt[back_type_s][back_key_s].data)
         # Reduce
-        bg_front.reduce()
-        bg_back.reduce()
+        #bg_front.reduce()
+        #bg_back.reduce()
         # Write to file
         #bg_front.write(evt,directory=bg_dir)
         #bg_back.write(evt,directory=bg_dir)
 
 
         #print data
-        data = bg_front.mean()
-        bg_front_mean = add_record(evt["analysis"], "analysis", "pnCCD front (mean)", data, unit='')
-        plotting.image.plotImage(evt["analysis"]["pnCCD front (mean)"], 
-                                 msg='', name="pnCCD front (mean)", vmin=0, vmax=10000)     
-        data = bg_front.max()
-        bg_front_max = add_record(evt["analysis"], "analysis", "pnCCD front (max)", data, unit='')
-        plotting.image.plotImage(evt["analysis"]["pnCCD front (max)"], 
-                                 msg='', name="pnCCD front (max)", vmin=0, vmax=10000)     
 
-        data = bg_back.mean()
-        bg_back_mean = add_record(evt["analysis"], "analysis", "pnCCD back (mean)", data, unit='')
-        plotting.image.plotImage(evt["analysis"]["pnCCD back (mean)"], 
-                                 msg='', name="pnCCD back (mean)", vmin=0, vmax=10000)     
-        data = bg_back.max()
-        bg_back_max = add_record(evt["analysis"], "analysis", "pnCCD back (max)", data, unit='')
-        plotting.image.plotImage(evt["analysis"]["pnCCD back (max)"], 
-                                 msg='', name="pnCCD back (max)", vmin=0, vmax=10000)     
+        #if numpy.random.rand() < 0.1:
+        if False:
+            if rank ==1:
+                data = bg_front.mean()
+                bg_front_mean = add_record(evt["analysis"], "analysis", "pnCCD front (mean)", data, unit='')
+                plotting.image.plotImage(evt["analysis"]["pnCCD front (mean)"], 
+                                         msg='', name="pnCCD front (mean)", vmin=0, vmax=10000)     
+            if rank == 2:
+                data = bg_front.max()
+                bg_front_max = add_record(evt["analysis"], "analysis", "pnCCD front (max)", data, unit='')
+                plotting.image.plotImage(evt["analysis"]["pnCCD front (max)"], 
+                                         msg='', name="pnCCD front (max)", vmin=0, vmax=10000)     
+            
+            if rank == 3:
+                data = bg_back.mean()
+                bg_back_mean = add_record(evt["analysis"], "analysis", "pnCCD back (mean)", data, unit='')
+                plotting.image.plotImage(evt["analysis"]["pnCCD back (mean)"], 
+                                         msg='', name="pnCCD back (mean)", vmin=0, vmax=10000)     
+            if rank == 4:
+                data = bg_back.max()
+                bg_back_max = add_record(evt["analysis"], "analysis", "pnCCD back (max)", data, unit='')
+                plotting.image.plotImage(evt["analysis"]["pnCCD back (max)"], 
+                                         msg='', name="pnCCD back (max)", vmin=0, vmax=10000)     
 
 
     
