@@ -22,7 +22,7 @@ state = {}
 state['Facility'] = 'LCLS'
 #state['LCLS/DataSource'] = 'exp=amo86615:run=3'
 state['LCLS/DataSource'] = 'shmem=psana.0:stop=no'
-state['LCLS/PsanaConf'] = this_dir + 'psana_cfg/pnccd.cfg'
+state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/pnccd.cfg'
 
 
 
