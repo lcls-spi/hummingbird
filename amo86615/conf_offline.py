@@ -30,7 +30,7 @@ show_prop = 0.01
 state = {}
 state['Facility'] = 'LCLS'
 state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/pnccd.cfg'
-state['LCLS/DataSource'] = 'exp=amo86615:run=21'
+state['LCLS/DataSource'] = 'exp=amo86615:run=78'
 
 # PNCCD
 # -----
@@ -44,6 +44,7 @@ back_key  = "pnccdBack[%s]" % back_type
 injector_x_key = "AMO:PPL:MMS:07.RBV"
 injector_y_key = "AMO:PPL:MMS:08.RBV"
 injector_z_key = "AMO:PPL:MMS:09.RBV"
+pnccd_z_key = "AMO:LMP:MMS:10.RBV"
 
 # ---------------------------------------------------------
 # I/O
@@ -122,9 +123,10 @@ def onEvent(evt):
     #print evt["photonPixelDetectors"].keys()
     #from IPython.core.debugger import Tracer
     #Tracer()()
-    for k in evt.keys(): print k
+    for k in evt["parameters"].keys(): print k
     print evt["parameters"].keys()
     print evt["parameters"][injector_x_key]
+    print evt["parameters"][pnccd_x_key]
     #print evt["parameters"][injector_y_key]
     #print evt["parameters"][injector_z_key]
     #print evt.native_keys()
@@ -190,19 +192,19 @@ def onEvent(evt):
         data = bg_back.max()
         bg_back_max = add_record(evt["analysis"], "analysis", "pnCCD back (max)", data, unit='')
         plotting.image.plotImage(evt["analysis"]["pnCCD back (max)"], 
-                                 msg='', name="pnCCD back (max)", vmin=0, vmax=10000)     
+                                 msg='', name="pnCCD back (max)")#, vmin=0, vmax=10000)     
 
         data = bg_back.sum()
         bg_back_sum = add_record(evt["analysis"], "analysis", "pnCCD back (sum)", data, unit='')
         plotting.image.plotImage(evt["analysis"]["pnCCD back (sum)"], 
-                                 msg='', name="pnCCD back (sum)", vmin=0, vmax=10000)     
+                                 msg='', name="pnCCD back (sum)")#, vmin=0, vmax=10000)     
 
     # -------- #
     # ANALYSIS #
     # -------- #
 
     # Simple hitfinding (Count Nr. of lit pixels)
-    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=1600, hitscoreThreshold=2000, hitscoreMax=500000, mask=mask_back)
+    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=1600, hitscoreThreshold=3600, hitscoreMax=500000, mask=mask_back)
 
     # Compute the hitrate
     analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - " + back_key], history=10000)

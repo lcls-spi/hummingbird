@@ -72,9 +72,9 @@ def onEvent(evt):
 
  
     plotting.image.plotImage(evt[front_type_s][front_key_s], 
-                             msg='', name="pnCCD front", vmin=0, vmax=10000, mask=mask_front)     
+                             msg='', name="pnCCD front", vmin=0, vmax=10000)#, mask=mask_front)     
     plotting.image.plotImage(evt[back_type_s][back_key_s], 
-                             msg='', name="pnCCD back", vmin=0, vmax=10000, mask=mask_back)     
+                             msg='', name="pnCCD back", vmin=0, vmax=10000)#, mask=mask_back)     
  
 
 
