@@ -41,9 +41,9 @@ back_key  = "pnccdBack[%s]" % back_type
 
 # INJECTOR MOTORS
 # ---------------
-injector_x_key = "AMO:PPL:MMS:07"
-injector_y_key = "AMO:PPL:MMS:08"
-injector_z_key = "AMO:PPL:MMS:09"
+injector_x_key = "AMO:PPL:MMS:07.RBV"
+injector_y_key = "AMO:PPL:MMS:08.RBV"
+injector_z_key = "AMO:PPL:MMS:09.RBV"
 
 # ---------------------------------------------------------
 # I/O
@@ -122,8 +122,25 @@ def onEvent(evt):
     #print evt["photonPixelDetectors"].keys()
     #from IPython.core.debugger import Tracer
     #Tracer()()
-    #print evt.keys()
+    for k in evt.keys(): print k
+    print evt["parameters"].keys()
+    print evt["parameters"][injector_x_key]
+    #print evt["parameters"][injector_y_key]
+    #print evt["parameters"][injector_z_key]
+    #print evt.native_keys()
     #evt["psana.PNCCD.FramesV1"]["DetInfo(Camp.0:pnCCD.0)"]
+
+    # ------- #
+    # RECORDS #
+    # ------- #
+    
+    # Injector motor positions
+    inj_x = evt["parameters"][injector_x_key]
+    inj_y = evt["parameters"][injector_y_key]
+    inj_z = evt["parameters"][injector_z_key]
+    # Injector pressures
+    #p1 = evt["parameters"]["CXI:SDS:REG:01:PRESS"]
+    #p2 = evt["parameters"]["CXI:SDS:REG:02:PRESS"]
 
     # -------------------- #
     # DETECTOR CORRECTIONS #
@@ -202,7 +219,6 @@ def onEvent(evt):
     # Plot the hitrate
     plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
 
-    
 
     # Plot MeanMap of hitrate(y,z)
     if False:
