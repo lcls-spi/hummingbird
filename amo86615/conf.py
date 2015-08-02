@@ -155,6 +155,7 @@ def onEvent(evt):
     analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=aduThreshold, hitscoreThreshold=3500, hitscoreMax=hitscoreMax, mask=mask_back)
     hit = evt["analysis"]["isHit - " + back_key].data
     hitscore = evt["analysis"]["hitscore - " + back_key].data
+    lighton = hitscore > hitscoreMax
 
     #analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=1600, hitscoreThreshold=1500, hitscoreMax=4500, mask=mask_back)
 
@@ -188,12 +189,12 @@ def onEvent(evt):
                                  msg='', name="pnCCD back")#, vmin=0, vmax=10000)#, mask=mask_back)     
 
     # Plot MeanMap of hitrate(y,z)
-    if hitscore < hitscoreMax:
+    if not lighton:
         plotting.correlation.plotMeanMap(evt["parameters"][injector_x_key], evt["parameters"][injector_z_key], hit, plotid='hitrateMeanMap', **hitrateMeanMapParams)
         plotting.correlation.plotMeanMap(evt["parameters"][injector_x_key], evt["parameters"][injector_z_key], hitscore, plotid='hitscoreMeanMap', **hitrateMeanMapParams)
 
     # COLLECTING BACKGROUND
-    if do_stacks and hitscore < hitscoreMax:
+    if do_stacks and not lighton:
         # Update
         bg_front.add(evt[front_type_s][front_key_s].data)
         bg_back.add(evt[back_type_s][back_key_s].data)
