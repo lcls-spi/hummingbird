@@ -76,10 +76,10 @@ mask_front = M_front.boolean_mask
 # ---------------------------------------------------------
 
 # Injector position limits
-x_min = -20.
-x_max = 20
+x_min = -5.
+x_max = 5
 x_bins = 1000
-z_min = -20.
+z_min = 10.
 z_max = 20.
 z_bins = 1000
 
@@ -103,6 +103,8 @@ def onEvent(evt):
     # MPI
     main_slave = ipc.mpi.is_main_slave()
     rank = ipc.mpi.rank
+    
+    #print "zmqserver",ipc.zmq().subscribed
 
     # ------------------- #
     # INITIAL DIAGNOSTICS #
@@ -147,12 +149,15 @@ def onEvent(evt):
     # Simple hitfinding (Count Nr. of lit pixels)
     if back_gain == "high":
         aduThreshold = 2000
+        hitscoreThreshold = 4200
         hitscoreMax = 200000
     else:
-        aduThreshold = 100
+        #aduThreshold = 100
+        aduThreshold = 30
+        hitscoreThreshold = 9500
         hitscoreMax = 200000
-    
-    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=aduThreshold, hitscoreThreshold=3500, hitscoreMax=hitscoreMax, mask=mask_back)
+    #print hitscoreThreshold
+    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, hitscoreMax=hitscoreMax, mask=mask_back)
     hit = evt["analysis"]["isHit - " + back_key].data
     hitscore = evt["analysis"]["hitscore - " + back_key].data
     lighton = hitscore > hitscoreMax
@@ -169,8 +174,13 @@ def onEvent(evt):
     plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
 
     # Plot injector positions
-    plotting.line.plotHistory(evt["parameters"][injector_x_key])
-    plotting.line.plotHistory(evt["parameters"][injector_z_key])
+    #plotting.line.plotHistory(evt["parameters"][injector_x_key])
+    #plotting.line.plotHistory(evt["parameters"][injector_z_key])
+
+    plotting.correlation.plotScatter(evt["parameters"][injector_x_key], evt["analysis"]["hitscore - " + back_key], plotid='Injector x position vs. hitscore', history=100)
+
+    if hit:
+        plotting.line.plotHistory(evt["parameters"][injector_x_key], label='Injector position of hits')
 
     # Pulse Energy
     #plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
@@ -190,8 +200,11 @@ def onEvent(evt):
 
     # Plot MeanMap of hitrate(y,z)
     if not lighton:
-        plotting.correlation.plotMeanMap(evt["parameters"][injector_x_key], evt["parameters"][injector_z_key], hit, plotid='hitrateMeanMap', **hitrateMeanMapParams)
-        plotting.correlation.plotMeanMap(evt["parameters"][injector_x_key], evt["parameters"][injector_z_key], hitscore, plotid='hitscoreMeanMap', **hitrateMeanMapParams)
+        #hit_sim = 1
+        plotting.correlation.plotMeanMap(evt["parameters"][injector_x_key], evt["parameters"][injector_z_key], hit,#float(hit_sim),
+                                         plotid='hitrateMeanMap', **hitrateMeanMapParams)
+        plotting.correlation.plotMeanMap(evt["parameters"][injector_x_key], evt["parameters"][injector_z_key], hitscore,
+                                         plotid='hitscoreMeanMap', **hitrateMeanMapParams)
 
     # COLLECTING BACKGROUND
     if do_stacks and not lighton:
@@ -226,7 +239,7 @@ def onEvent(evt):
             bg_front.reduce()
             bg_back.reduce()
             # Write to file
-            bg_front.write(evt,directory=bg_dir)
-            bg_back.write(evt,directory=bg_dir)
+            #bg_front.write(evt,directory=bg_dir)
+            #bg_back.write(evt,directory=bg_dir)
 
     
