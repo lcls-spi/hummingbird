@@ -97,11 +97,15 @@ hitrateMeanMapParams = {
     'ylabel': 'Injector Position in z (%s)' % injector_z_key
 }
 
+event_number = 0
+
 # ---------------------------------------------------------
 # E V E N T   C A L L
 # ---------------------------------------------------------
 
 def onEvent(evt):
+    global event_number
+    event_number += 1
     # MPI
     main_slave = ipc.mpi.is_main_slave()
     rank = ipc.mpi.rank
@@ -155,7 +159,8 @@ def onEvent(evt):
         hitscoreMax = 200000
     elif back_gain == "1/16":
         aduThreshold = 30*16
-        hitscoreThreshold = 600
+        #hitscoreThreshold = 600
+        hitscoreThreshold = 100
         hitscoreMax = 200000
     elif back_gain == "1/64":
         aduThreshold = 30*4
@@ -204,14 +209,14 @@ def onEvent(evt):
         plotting.image.plotImage(evt[front_type_s][front_key_s], 
                                  msg='', name="pnCCD front (hit)")#, vmin=0, vmax=10000, mask=mask_front)     
         plotting.image.plotImage(evt[back_type_s][back_key_s], 
-                                 msg='', name="pnCCD back (hit)")#, vmin=0, vmax=10000, mask=mask_back) 
+                                 msg='', name="pnCCD back (hit)")#, mask=mask_back) 
         if golden_hit:
             plotting.image.plotImage(evt[front_type_s][front_key_s], 
                                      msg='', name="pnCCD front (Golden hit)")#, vmin=0, vmax=10000, mask=mask_front)     
             plotting.image.plotImage(evt[back_type_s][back_key_s], 
                                      msg='', name="pnCCD back (Golden hit)")#, vmin=0, vmax=10000, mask=mask_back) 
 
-    if do_showall and (show_prop > numpy.random.rand()) and rank > 5:
+    if do_showall and (event_number % 50 == 0) and rank > 5:
         plotting.image.plotImage(evt[front_type_s][front_key_s], 
                                  msg='', name="pnCCD front")#, vmin=0, vmax=10000)#, mask=mask_front)     
         plotting.image.plotImage(evt[back_type_s][back_key_s], 
