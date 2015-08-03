@@ -20,9 +20,11 @@ do_stacks = True
 do_cmc = True
 # Send all events to the frontend
 do_showall  = True
-show_prop = 0.9
+show_prop = 0.02
 
-back_gain = "low"
+back_gain = "1/16"
+#back_gain = "1/64"
+#back_gain = "low"
 #back_gain = "high"
 
 # ---------------------------------------------------------
@@ -50,9 +52,9 @@ back_key  = "pnccdBack[%s]" % back_type
 
 # Backgrounds
 # -----------
-Nbg   = 100
-rbg   = 100
-obg   = 10
+Nbg   = 10
+rbg   = 10
+obg   = 10000
 stack_outputs = None
 #stack_outputs = ["max","mean"]
 bg_front = analysis.stack.Stack(name="bg_front",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg,outputs=stack_outputs)
@@ -95,11 +97,15 @@ hitrateMeanMapParams = {
     'ylabel': 'Injector Position in z (%s)' % injector_z_key
 }
 
+event_number = 0
+
 # ---------------------------------------------------------
 # E V E N T   C A L L
 # ---------------------------------------------------------
 
 def onEvent(evt):
+    global event_number
+    event_number += 1
     # MPI
     main_slave = ipc.mpi.is_main_slave()
     rank = ipc.mpi.rank
@@ -151,14 +157,26 @@ def onEvent(evt):
         aduThreshold = 2000
         hitscoreThreshold = 4200
         hitscoreMax = 200000
+    elif back_gain == "1/16":
+        aduThreshold = 30*16
+        #hitscoreThreshold = 600
+        hitscoreThreshold = 100
+        hitscoreMax = 200000
+    elif back_gain == "1/64":
+        aduThreshold = 30*4
+        hitscoreThreshold = 600
+        hitscoreMax = 200000
     else:
         #aduThreshold = 100
         aduThreshold = 30
-        hitscoreThreshold = 9500
+        hitscoreThreshold = 600
         hitscoreMax = 200000
     #print hitscoreThreshold
     analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=aduThreshold, hitscoreThreshold=hitscoreThreshold, hitscoreMax=hitscoreMax, mask=mask_back)
+    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=aduThreshold, hitscoreThreshold=9000, hitscoreMax=hitscoreMax, mask=mask_back,label="Golden ")
     hit = evt["analysis"]["isHit - " + back_key].data
+    golden_hit = evt["analysis"]["Golden isHit - " + back_key].data
+
     hitscore = evt["analysis"]["hitscore - " + back_key].data
     lighton = hitscore > hitscoreMax
 
@@ -177,7 +195,8 @@ def onEvent(evt):
     #plotting.line.plotHistory(evt["parameters"][injector_x_key])
     #plotting.line.plotHistory(evt["parameters"][injector_z_key])
 
-    plotting.correlation.plotScatter(evt["parameters"][injector_x_key], evt["analysis"]["hitscore - " + back_key], plotid='Injector x position vs. hitscore', history=100)
+    plotting.correlation.plotScatter(evt["parameters"][injector_x_key], evt["analysis"]["hitscore - " + back_key],
+                                     plotid='Injector x position vs. hitscore', history=100)
 
     if hit:
         plotting.line.plotHistory(evt["parameters"][injector_x_key], label='Injector position of hits')
@@ -190,9 +209,14 @@ def onEvent(evt):
         plotting.image.plotImage(evt[front_type_s][front_key_s], 
                                  msg='', name="pnCCD front (hit)")#, vmin=0, vmax=10000, mask=mask_front)     
         plotting.image.plotImage(evt[back_type_s][back_key_s], 
-                                 msg='', name="pnCCD back (hit)")#, vmin=0, vmax=10000, mask=mask_back) 
+                                 msg='', name="pnCCD back (hit)")#, mask=mask_back) 
+        if golden_hit:
+            plotting.image.plotImage(evt[front_type_s][front_key_s], 
+                                     msg='', name="pnCCD front (Golden hit)")#, vmin=0, vmax=10000, mask=mask_front)     
+            plotting.image.plotImage(evt[back_type_s][back_key_s], 
+                                     msg='', name="pnCCD back (Golden hit)")#, vmin=0, vmax=10000, mask=mask_back) 
 
-    if do_showall and (show_prop < numpy.random.rand()) and rank > 5:
+    if do_showall and (event_number % 50 == 0) and rank > 5:
         plotting.image.plotImage(evt[front_type_s][front_key_s], 
                                  msg='', name="pnCCD front")#, vmin=0, vmax=10000)#, mask=mask_front)     
         plotting.image.plotImage(evt[back_type_s][back_key_s], 
@@ -239,7 +263,7 @@ def onEvent(evt):
             bg_front.reduce()
             bg_back.reduce()
             # Write to file
-            #bg_front.write(evt,directory=bg_dir)
-            #bg_back.write(evt,directory=bg_dir)
+            bg_front.write(evt,directory=bg_dir)
+            bg_back.write(evt,directory=bg_dir)
 
     
