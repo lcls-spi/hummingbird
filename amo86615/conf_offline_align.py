@@ -30,7 +30,7 @@ show_prop = 0.01
 state = {}
 state['Facility'] = 'LCLS'
 state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/quiet_pnccd.cfg'
-state['LCLS/DataSource'] = 'exp=amo86615:run=94:dir=/reg/d/ffb/amo/amo86615/xtc:idx'
+state['LCLS/DataSource'] = 'exp=amo86615:run=103:dir=/reg/d/ffb/amo/amo86615/xtc:idx'
 state['do_full_run'] = True
 
 # PNCCD
