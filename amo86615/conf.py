@@ -122,12 +122,12 @@ def onEvent(evt):
     # Skip frames that do not have the pnCCDs
     try:
         evt[back_type][back_key]
-    except TypeError:
+    except TypeError,KeyError:
         print "No back pnCCD. Skipping event."
         return
     try:
         evt[front_type][front_key]
-    except TypeError:
+    except TypeError,KeyError:
         print "No front pnCCD. Skipping event."
         return
 
@@ -160,8 +160,8 @@ def onEvent(evt):
     elif back_gain == "1/16":
         aduThreshold = 30*16
         #hitscoreThreshold = 600
-        hitscoreThreshold = 100
-        hitscoreMax = 200000
+        hitscoreThreshold = 50
+        hitscoreMax = 5000
     elif back_gain == "1/64":
         aduThreshold = 30*4
         hitscoreThreshold = 600
