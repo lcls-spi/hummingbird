@@ -3,6 +3,7 @@ import analysis.event
 import analysis.stack
 import analysis.pixel_detector
 import analysis.hitfinding
+import analysis.sizing
 import plotting.image
 import plotting.line
 import plotting.correlation
@@ -21,6 +22,8 @@ do_cmc = True
 # Send all events to the frontend
 do_showall  = True
 show_prop = 0.02
+# Sizing of hits
+do_sizing = True
 
 back_gain = "1/16"
 #back_gain = "1/64"
@@ -98,6 +101,47 @@ hitrateMeanMapParams = {
 }
 
 event_number = 0
+
+# ---------------------------------------------------------
+# ANALYSIS
+# ---------------------------------------------------------
+
+# Sizing
+# ------
+binning =4 
+
+centerParams = {
+    'x0'       : (520 - (nx_back-1)/2.)/binning,
+    'y0'       : (512 - (ny_back-1)/2.)/binning,
+    'maxshift' : 10/binning,
+    'threshold': 20*binning**2,
+    'blur'     : 4,
+}
+modelParams = {
+    'wavelength':0.7963,
+    'pixelsize':75*binning,
+    'distance':735,
+    'material':'virus',
+}
+sizingParams = {
+    'd0':100,
+    'i0':1,
+    'brute_evals':10,
+}
+
+
+
+# ---------------------------------------------------------
+# INTERFACE
+# ---------------------------------------------------------
+
+# Image
+vmin_back = 0
+vmax_back = 1000
+
+# Radial averages
+radial_tracelen = 300
+
 
 # ---------------------------------------------------------
 # E V E N T   C A L L
@@ -267,3 +311,47 @@ def onEvent(evt):
             bg_back.write(evt,directory=bg_dir)
 
     
+    if do_sizing:
+        # Binning
+        analysis.pixel_detector.bin(evt, back_type_s, back_key_s, binning, mask_back_s)
+        #analysis.pixel_detector.bin(evt, front_type_s, front_type_s)
+        #front_key_s = "binned image - " + front_key
+        mask_back_b = evt["analysis"]["binned mask - " + back_key_s].data
+        back_type_b = "analysis"
+        back_key_b = "binned image - " + back_key_s
+        #front_type_s = "analysis"
+        
+        #print "HIT (hit score %i > %i)" % (evt["analysis"]["hitscore - " + back_key].data, hitscoreThreshold)
+        # CENTER DETERMINATION
+        analysis.sizing.findCenter(evt, back_type_b, back_key_b, mask=mask_back_b, **centerParams)
+        # RADIAL AVERAGE
+        analysis.pixel_detector.radial(evt, back_type_b, back_key_b, mask=mask_back_b, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)          
+        # FIT SPHERE MODEL
+        analysis.sizing.fitSphereRadial(evt, "analysis", "radial distance - " + back_key_b, "radial average - " + back_key_b, **dict(modelParams, **sizingParams))
+        # DIFFRACTION PATTERN FROM FIT
+        analysis.sizing.sphereModel(evt, "analysis", "offCenterX", "offCenterY", "diameter", "intensity", (ny_back/binning,nx_back/binning), poisson=False, **modelParams)
+        # RADIAL AVERAGE FIT
+        analysis.pixel_detector.radial(evt, "analysis", "fit", mask=mask_back_b, cx=evt["analysis"]["cx"].data, cy=evt["analysis"]["cy"].data)
+        # ERRORS
+        analysis.sizing.photon_error(evt, back_type_b, back_key_b, "analysis", "fit", 144.)
+        analysis.sizing.absolute_error(evt, back_type_b, back_key_b, "analysis", "fit", "absolute error")
+        
+        # Image of fit
+        msg = "diameter: %.2f nm \nIntensity: %.2f mJ/um2\nError: %.2e" %(evt["analysis"]["diameter"].data, evt["analysis"]["intensity"].data, evt["analysis"]["photon error"].data)
+
+        # HYBRID PATTERN
+        hybrid = evt["analysis"]["fit"].data.copy()
+        hybrid[:,:520/binning] = evt[back_type_b][back_key_b].data[:,:520/binning]
+        add_record(evt["analysis"], "analysis", "Hybrid pattern", hybrid)
+        error = evt["analysis"]["photon error"].data
+        #if error < 1E4:
+        plotting.image.plotImage(evt["analysis"]["Hybrid pattern"], mask=mask_back_b, name="Hybrid pattern", msg=msg)
+        plotting.line.plotHistory(evt["analysis"]["photon error"], history=1000)
+
+        plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_back_b, name="pnCCD: Fit result (radial sphere fit)", msg=msg)
+            
+        # Plot measurement radial average
+        plotting.line.plotTrace(evt["analysis"]["radial average - "+back_key_b], evt["analysis"]["radial distance - "+back_key_b],tracelen=radial_tracelen)
+        # Plot fit radial average
+        plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
+ 
