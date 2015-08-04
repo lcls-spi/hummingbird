@@ -118,12 +118,14 @@ def onEvent(evt):
     #W.write(D_params, "params", i_glob)
 
     D_back = {}
-    D_back["image"] = evt[back_type_s][back_key_s].data
+    D_back["data"] = evt[back_type_s][back_key_s].data
+    D_back["mask"]  = numpy.array(mask_back == False, dtype="uint16")
     D_back["i"] = i_glob
     W.write(D_back, "back_pnccd", i_glob)
 
     D_front = {}
-    D_front["image"] = evt[front_type_s][front_key_s].data
+    D_front["data"] = evt[front_type_s][front_key_s].data
+    #D_front["mask"]  = numpy.array(mask_front == False, dtype="uin16")
     D_front["i"] = i_glob
     W.write(D_front, "front_pnccd", i_glob)
        

@@ -30,7 +30,9 @@ show_prop = 0.01
 state = {}
 state['Facility'] = 'LCLS'
 state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/pnccd.cfg'
-state['LCLS/DataSource'] = 'exp=amo86615:run=78'
+#state['LCLS/DataSource'] = 'exp=amo86615:run=120'
+#state['LCLS/DataSource'] = 'exp=amo86615:run=122'
+state['LCLS/DataSource'] = 'exp=amo86615:run=135'
 
 # PNCCD
 # -----
@@ -123,10 +125,10 @@ def onEvent(evt):
     #print evt["photonPixelDetectors"].keys()
     #from IPython.core.debugger import Tracer
     #Tracer()()
-    for k in evt["parameters"].keys(): print k
-    print evt["parameters"].keys()
-    print evt["parameters"][injector_x_key]
-    print evt["parameters"][pnccd_x_key]
+    #for k in evt["parameters"].keys(): print k
+    #print evt["parameters"].keys()
+    #print evt["parameters"][injector_x_key]
+    #print evt["parameters"][pnccd_x_key]
     #print evt["parameters"][injector_y_key]
     #print evt["parameters"][injector_z_key]
     #print evt.native_keys()
@@ -221,6 +223,10 @@ def onEvent(evt):
     # Plot the hitrate
     plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
 
+    # Plot the hitrate
+    add_record(evt["analysis"], "analysis", "sum", evt[back_type][back_key].data.sum(), unit="")
+    plotting.line.plotHistory(evt["analysis"]["sum"], label='Sum [ADU]')
+
 
     # Plot MeanMap of hitrate(y,z)
     if False:
@@ -236,6 +242,15 @@ def onEvent(evt):
 
     # Pulse Energy
     #plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
+    
+    # Perform sizing on hits
+    if do_showall:
+        plotting.image.plotImage(evt[front_type_s][front_key_s], 
+                                 msg='', name="pnCCD front", mask=mask_front)     
+        plotting.image.plotImage(evt[back_type_s][back_key_s], 
+                                 msg='', name="pnCCD back", mask=mask_back) 
+
+
 
     # Perform sizing on hits
     if hit:

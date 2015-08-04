@@ -30,7 +30,7 @@ show_prop = 0.01
 state = {}
 state['Facility'] = 'LCLS'
 state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/quiet_pnccd.cfg'
-state['LCLS/DataSource'] = 'exp=amo86615:run=103:dir=/reg/d/ffb/amo/amo86615/xtc:idx'
+state['LCLS/DataSource'] = 'exp=amo86615:run=132:dir=/reg/d/ffb/amo/amo86615/xtc:idx'
 state['do_full_run'] = True
 
 # PNCCD
@@ -165,7 +165,7 @@ def onEvent(evt):
     # -------- #
 
     # Simple hitfinding (Count Nr. of lit pixels)
-    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=30, hitscoreThreshold=9500, hitscoreMax=500000, mask=mask_back)
+    analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=30*16, hitscoreThreshold=50, hitscoreMax=5000, mask=mask_back)
 
     # Compute the hitrate
     analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - " + back_key].data, history=10000)
