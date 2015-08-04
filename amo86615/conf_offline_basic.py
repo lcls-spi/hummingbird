@@ -25,11 +25,12 @@ show_prop = 0.01
 # P S A N A
 # ---------------------------------------------------------
 state = {}
-run_num = 98
+run_num = 160
 state['Facility'] = 'LCLS'
 state['LCLS/PsanaConf'] = this_dir + '/psana_cfg/quiet_pnccd.cfg'
 state['LCLS/DataSource'] = 'exp=amo86615:run=%d:dir=/reg/d/ffb/amo/amo86615/xtc:idx' % run_num
 state['do_full_run'] = True
+state['zmq_ctrl_port'] = 13137
 
 # PNCCD
 # -----
@@ -37,6 +38,18 @@ front_type = "image"
 front_key  = "pnccdFront[%s]" % front_type
 back_type = "image"
 back_key  = "pnccdBack[%s]" % back_type
+
+if do_cmc:
+    # CMC
+    back_type_s = "analysis"
+    back_key_s = "cmc_pnccd - " + back_key
+    front_type_s = "analysis"
+    front_key_s = "cmc_pnccd - " + front_key
+if not do_cmc:
+    back_type_s = back_type
+    back_key_s = back_key
+    front_type_s = front_type
+    front_key_s = front_key
 
 # INJECTOR MOTORS
 # ---------------
@@ -67,19 +80,23 @@ mask_front = M_front.boolean_mask
 
 # Hitfinding
 # ----------
-adu_threshold = 30
-min_lit_pixels = 5000
+adu_threshold = 30*16
+min_lit_pixels = 50
 max_lit_pixels = 500000
 
 # Recording
 # ---------
 stuff_to_record = {
-    'hitscore_back': ('analysis', 'hitscore - ' + back_key),
+    'result/hitscore_back': ('analysis', 'hitscore - ' + back_key),
+    'result/pnccd_back/data': (back_type_s, back_key_s),
+    'result/pnccd_front/data': (front_type_s, front_key_s),
     #'hitscore_front': ('analysis', 'hitscore - ' + front_key)
 }
-recorder_dir = "/reg/d/psdm/amo/amo86615/scratch/ksa47/offline_hits/%.3d" % run_num
-if not os.path.isdir(recorder_dir):
+recorder_dir = "/reg/d/psdm/amo/amo86615/scratch/ksa47/cxi/%.3d" % run_num
+try:
     os.makedirs(recorder_dir)
+except OSError:
+    pass
 recorder = analysis.recorder.Recorder(recorder_dir, stuff_to_record, ipc.mpi.rank, maxEvents = 100000)
 
 # ---------------------------------------------------------
@@ -119,19 +136,8 @@ def onEvent(evt):
     # -------------------- #
 
     if do_cmc:
-        # CMC
         analysis.pixel_detector.cmc_pnccd(evt, back_type, back_key)
         analysis.pixel_detector.cmc_pnccd(evt, front_type, front_key)
-        back_type_s = "analysis"
-        back_key_s = "cmc_pnccd - " + back_key
-        front_type_s = "analysis"
-        front_key_s = "cmc_pnccd - " + front_key
-    if not do_cmc:
-        back_type_s = back_type
-        back_key_s = back_key
-        front_type_s = front_type
-        front_key_s = front_key
-
 
     # -------- #
     # ANALYSIS #
