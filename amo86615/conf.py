@@ -4,6 +4,7 @@ import analysis.stack
 import analysis.pixel_detector
 import analysis.hitfinding
 import analysis.sizing
+import analysis.stats
 import plotting.image
 import plotting.line
 import plotting.correlation
@@ -60,7 +61,8 @@ rbg   = 10
 obg   = 10000
 stack_outputs = None
 #stack_outputs = ["max","mean"]
-bg_front = analysis.stack.Stack(name="bg_front",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg,outputs=stack_outputs)
+#bg_front = analysis.stack.Stack(name="bg_front",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg,outputs=stack_outputs)
+bg_front = analysis.stats.DataStatistics()
 bg_back = analysis.stack.Stack(name="bg_back",maxLen=Nbg,outPeriod=obg,reducePeriod=rbg,outputs=stack_outputs)
 bg_dir = "/reg/neh/home/hantke/amo86615_scratch/stack/"
 #bg_dir = this_dir + "/stack"
@@ -118,7 +120,7 @@ centerParams = {
     'blur'     : 4,
 }
 modelParams = {
-    'wavelength':0.7963,
+    'wavelength':0.775,
     'pixelsize':75*binning,
     'distance':735,
     'material':'virus',
@@ -304,16 +306,16 @@ def onEvent(evt):
 
         if rank == 5:
             # Reduce stack
-            bg_front.reduce()
+#            bg_front.reduce()
             bg_back.reduce()
             # Write to file
-            bg_front.write(evt,directory=bg_dir)
+#            bg_front.write(evt,directory=bg_dir)
             bg_back.write(evt,directory=bg_dir)
 
     
-    if do_sizing:
+    if hit and do_sizing:
         # Binning
-        analysis.pixel_detector.bin(evt, back_type_s, back_key_s, binning, mask_back_s)
+        analysis.pixel_detector.bin(evt, back_type_s, back_key_s, binning, mask_back)
         #analysis.pixel_detector.bin(evt, front_type_s, front_type_s)
         #front_key_s = "binned image - " + front_key
         mask_back_b = evt["analysis"]["binned mask - " + back_key_s].data
@@ -354,4 +356,8 @@ def onEvent(evt):
         plotting.line.plotTrace(evt["analysis"]["radial average - "+back_key_b], evt["analysis"]["radial distance - "+back_key_b],tracelen=radial_tracelen)
         # Plot fit radial average
         plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
+
+
+        plotting.line.plotHistory(evt["analysis"]["diameter"], history=1000)
+        
  
