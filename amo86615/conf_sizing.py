@@ -4,6 +4,7 @@ import analysis.event
 import analysis.pixel_detector
 import analysis.hitfinding
 import analysis.sizing
+import analysis.patterson
 import plotting.image
 import plotting.line
 import utils.reader
@@ -93,9 +94,10 @@ centerParams = {
     'threshold': 20*binning**2,
     'blur'     : 4,
 }
+pixelsize_native = 75E-6 
 modelParams = {
     'wavelength':0.7963,
-    'pixelsize':75*binning,
+    'pixelsize':pixelsize_native/1E-6*binning,
     'distance':735,
     'material':'virus',
 }
@@ -105,7 +107,7 @@ sizingParams = {
     'brute_evals':10,
 }
 
-
+res = modelParams["distance"] * 1E-3* modelParams["wavelength"] * 1E-9 / ( pixelsize_native * nx_back )
 
 # ---------------------------------------------------------
 # INTERFACE
@@ -196,14 +198,18 @@ def onEvent(evt):
         hybrid[:,:520/binning] = evt[back_type_b][back_key_b].data[:,:520/binning]
         add_record(evt["analysis"], "analysis", "Hybrid pattern", hybrid)
         error = evt["analysis"]["photon error"].data
-        #if error < 1E4:
         plotting.image.plotImage(evt["analysis"]["Hybrid pattern"], mask=mask_back_b, name="Hybrid pattern", msg=msg)
         plotting.line.plotHistory(evt["analysis"]["photon error"], history=1000)
 
         plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_back_b, name="pnCCD: Fit result (radial sphere fit)", msg=msg)
+
             
         # Plot measurement radial average
         plotting.line.plotTrace(evt["analysis"]["radial average - "+back_key_b], evt["analysis"]["radial distance - "+back_key_b],tracelen=radial_tracelen)
         # Plot fit radial average
         plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
  
+        diameter_pix =  evt["analysis"]["diameter"].data * 1E-9 / res
+        analysis.patterson.patterson(evt, back_type_b, back_key_b, mask_back_b, threshold=4. ,diameter_pix=diameter_pix)
+        plotting.image.plotImage(evt["analysis"]["patterson"], name="Patterson")
+        plotting.line.plotHistory(evt["analysis"]["multiple score"], history=1000)
