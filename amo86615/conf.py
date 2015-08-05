@@ -8,6 +8,7 @@ import analysis.stats
 import plotting.image
 import plotting.line
 import plotting.correlation
+import analysis.patterson
 import utils.reader
 import os,sys
 this_dir = os.path.dirname(os.path.realpath(__file__))
@@ -119,9 +120,10 @@ centerParams = {
     'threshold': 20*binning**2,
     'blur'     : 4,
 }
+pixelsize_native = 75E-6 
 modelParams = {
-    'wavelength':0.775,
-    'pixelsize':75*binning,
+    'wavelength':0.7963,
+    'pixelsize':pixelsize_native/1E-6*binning,
     'distance':735,
     'material':'virus',
 }
@@ -131,6 +133,7 @@ sizingParams = {
     'brute_evals':10,
 }
 
+res = modelParams["distance"] * 1E-3* modelParams["wavelength"] * 1E-9 / ( pixelsize_native * nx_back )
 
 
 # ---------------------------------------------------------
