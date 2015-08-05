@@ -341,23 +341,40 @@ def onEvent(evt):
         # Image of fit
         msg = "diameter: %.2f nm \nIntensity: %.2f mJ/um2\nError: %.2e" %(evt["analysis"]["diameter"].data, evt["analysis"]["intensity"].data, evt["analysis"]["photon error"].data)
 
-        # HYBRID PATTERN
-        hybrid = evt["analysis"]["fit"].data.copy()
-        hybrid[:,:520/binning] = evt[back_type_b][back_key_b].data[:,:520/binning]
-        add_record(evt["analysis"], "analysis", "Hybrid pattern", hybrid)
-        error = evt["analysis"]["photon error"].data
-        #if error < 1E4:
-        plotting.image.plotImage(evt["analysis"]["Hybrid pattern"], mask=mask_back_b, name="Hybrid pattern", msg=msg)
-        plotting.line.plotHistory(evt["analysis"]["photon error"], history=1000)
-
-        plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_back_b, name="pnCCD: Fit result (radial sphere fit)", msg=msg)
-            
-        # Plot measurement radial average
-        plotting.line.plotTrace(evt["analysis"]["radial average - "+back_key_b], evt["analysis"]["radial distance - "+back_key_b],tracelen=radial_tracelen)
-        # Plot fit radial average
-        plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
-
-
-        plotting.line.plotHistory(evt["analysis"]["diameter"], history=1000)
+        # Multiple particle hit finding
+        diameter_pix =  evt["analysis"]["diameter"].data * 1E-9 / res
+        analysis.patterson.patterson(evt, back_type_b, back_key_b, mask_back_b, threshold=4. ,diameter_pix=diameter_pix)
+        plotting.image.plotImage(evt["analysis"]["patterson"], name="Patterson")
+        plotting.line.plotHistory(evt["analysis"]["multiple score"], history=1000)
+        multiple_hit = evt["analysis"]["multiple score"].data > 100.
         
- 
+        glorious_hit = ((evt["analysis"]["diameter"].data - expected_diameter) < 10.) and not multiple_hit
+
+        if glorious_hit:
+            plotting.image.plotImage(evt[back_type_s][back_key_s], 
+                                     msg='', name="pnCCD back (glorious hit)")#, mask=mask_back) 
+
+
+        if not multiple_hit:
+            # HYBRID PATTERN
+            hybrid = evt["analysis"]["fit"].data.copy()
+            hybrid[:,:520/binning] = evt[back_type_b][back_key_b].data[:,:520/binning]
+            add_record(evt["analysis"], "analysis", "Hybrid pattern", hybrid)
+            
+            error = evt["analysis"]["photon error"].data
+            plotting.image.plotImage(evt["analysis"]["Hybrid pattern"], mask=mask_back_b, name="Hybrid pattern", msg=msg)
+            plotting.line.plotHistory(evt["analysis"]["photon error"], history=1000)
+
+            plotting.image.plotImage(evt["analysis"]["fit"], log=True, mask=mask_back_b, name="pnCCD: Fit result (radial sphere fit)", msg=msg)
+            # Plot measurement radial average
+            plotting.line.plotTrace(evt["analysis"]["radial average - "+back_key_b], evt["analysis"]["radial distance - "+back_key_b],tracelen=radial_tracelen)
+            # Plot fit radial average
+            plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
+
+        else:
+            
+
+            plotting.image.plotImage(evt[back_type_s][back_key_s], 
+                                     msg='', name="pnCCD back (multiple hit)")#, mask=mask_back) 
+
+
