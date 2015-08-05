@@ -134,7 +134,7 @@ sizingParams = {
 }
 
 res = modelParams["distance"] * 1E-3* modelParams["wavelength"] * 1E-9 / ( pixelsize_native * nx_back )
-
+expected_diameter = 73
 
 # ---------------------------------------------------------
 # INTERFACE
@@ -231,14 +231,9 @@ def onEvent(evt):
 
     #analysis.hitfinding.countLitPixels(evt, back_type, back_key, aduThreshold=1600, hitscoreThreshold=1500, hitscoreMax=4500, mask=mask_back)
 
-    # Compute the hitrate
-    analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - " + back_key].data, history=10000)
     
     # Plot the hitscore
     plotting.line.plotHistory(evt["analysis"]["hitscore - " + back_key], runningHistogram=True, hmin=0, hmax=100000, bins=100, window=100, history=1000)
-
-    # Plot the hitrate
-    plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
 
     # Plot injector positions
     #plotting.line.plotHistory(evt["parameters"][injector_x_key])
@@ -253,17 +248,6 @@ def onEvent(evt):
     # Pulse Energy
     #plotting.line.plotHistory(evt["analysis"]["averagePulseEnergy"])
 
-    # Show hits
-    if hit:
-        plotting.image.plotImage(evt[front_type_s][front_key_s], 
-                                 msg='', name="pnCCD front (hit)")#, vmin=0, vmax=10000, mask=mask_front)     
-        plotting.image.plotImage(evt[back_type_s][back_key_s], 
-                                 msg='', name="pnCCD back (hit)")#, mask=mask_back) 
-        if golden_hit:
-            plotting.image.plotImage(evt[front_type_s][front_key_s], 
-                                     msg='', name="pnCCD front (Golden hit)")#, vmin=0, vmax=10000, mask=mask_front)     
-            plotting.image.plotImage(evt[back_type_s][back_key_s], 
-                                     msg='', name="pnCCD back (Golden hit)")#, vmin=0, vmax=10000, mask=mask_back) 
 
     if do_showall and (event_number % 50 == 0) and rank > 5:
         plotting.image.plotImage(evt[front_type_s][front_key_s], 
@@ -315,7 +299,7 @@ def onEvent(evt):
 #            bg_front.write(evt,directory=bg_dir)
             bg_back.write(evt,directory=bg_dir)
 
-    
+    glorious_hit = False
     if hit and do_sizing:
         # Binning
         analysis.pixel_detector.bin(evt, back_type_s, back_key_s, binning, mask_back)
@@ -347,11 +331,11 @@ def onEvent(evt):
         # Multiple particle hit finding
         diameter_pix =  evt["analysis"]["diameter"].data * 1E-9 / res
         analysis.patterson.patterson(evt, back_type_b, back_key_b, mask_back_b, threshold=4. ,diameter_pix=diameter_pix)
-        plotting.image.plotImage(evt["analysis"]["patterson"], name="Patterson")
         plotting.line.plotHistory(evt["analysis"]["multiple score"], history=1000)
+        plotting.line.plotHistory(evt["analysis"]["diameter"], history=1000)
         multiple_hit = evt["analysis"]["multiple score"].data > 100.
         
-        glorious_hit = ((evt["analysis"]["diameter"].data - expected_diameter) < 10.) and not multiple_hit
+        glorious_hit = (abs(evt["analysis"]["diameter"].data - expected_diameter) < 10.) and not multiple_hit
 
         if glorious_hit:
             plotting.image.plotImage(evt[back_type_s][back_key_s], 
@@ -373,11 +357,34 @@ def onEvent(evt):
             plotting.line.plotTrace(evt["analysis"]["radial average - "+back_key_b], evt["analysis"]["radial distance - "+back_key_b],tracelen=radial_tracelen)
             # Plot fit radial average
             plotting.line.plotTrace(evt["analysis"]["radial average - fit"], evt["analysis"]["radial distance - fit"], tracelen=radial_tracelen)         
-
+            plotting.line.plotHistory(evt["analysis"]["diameter"], history=1000, name_extension="single hits")
         else:
-            
+            plotting.line.plotHistory(evt["analysis"]["diameter"], history=1000, name_extension="multiple hits")
 
             plotting.image.plotImage(evt[back_type_s][back_key_s], 
                                      msg='', name="pnCCD back (multiple hit)")#, mask=mask_back) 
 
 
+ 
+    # Show hits
+    if hit:
+        plotting.image.plotImage(evt[front_type_s][front_key_s], 
+                                 msg='', name="pnCCD front (hit)")#, vmin=0, vmax=10000, mask=mask_front)     
+        plotting.image.plotImage(evt[back_type_s][back_key_s], 
+                                 msg='', name="pnCCD back (hit)")#, mask=mask_back) 
+        if do_sizing:
+            plotting.image.plotImage(evt["analysis"]["patterson"], name="Patterson")
+
+        if golden_hit:
+            plotting.image.plotImage(evt[front_type_s][front_key_s], 
+                                     msg='', name="pnCCD front (Golden hit)")#, vmin=0, vmax=10000, mask=mask_front)     
+            plotting.image.plotImage(evt[back_type_s][back_key_s], 
+                                     msg='', name="pnCCD back (Golden hit)")#, vmin=0, vmax=10000, mask=mask_back) 
+
+
+    # Compute the hitrate
+    analysis.hitfinding.hitrate(evt, evt["analysis"]["isHit - " + back_key].data, good_hit=glorious_hit, history=10000)
+
+    # Plot the hitrate
+    plotting.line.plotHistory(evt["analysis"]["hitrate"], label='Hit rate [%]')
+    plotting.line.plotHistory(evt["analysis"]["good hitrate"], label='Hit rate (good hits) [%]')
