@@ -8,13 +8,24 @@ import ipc
 import numpy
 import numpy.random
 from backend import add_record
+from simulation.ptycho import Simulation
 
-N = 50
-frames = numpy.load('frames_%s.npy' %N)
-## or run 'experiment' directly
-frames[frames<=0.] =1.
+# Define the experiment
+sample_filename = 'pseudo_star.png'
 
-numpy.random.seed()
+# Simulate the experiment
+sim = Simulation()
+sim.loadBinarySample(sample_filename)
+sim.defineIllumination()
+sim.defineExitWave()
+sim.propagate()
+
+# Draw frames randomly
+#numpy.random.seed()
+#select = numpy.random.randint(0,sim.nframes)
+
+# Draw frames in order
+select = numpy.arange(sim.nframes)
 
 state = {
     'Facility': 'Dummy',
@@ -29,7 +40,8 @@ state = {
             # It's also the native key that will be used
             'CCD': {
                 # A function that will generate the data for every event
-                'data': lambda: numpy.log(frames[numpy.random.randint(0,N)]),
+                #'data': lambda: numpy.log(frames[numpy.random.randint(0,N)]),
+                'data': lambda: sim.frames[select],
                 # The units to be used
                 'unit': 'ADU',     
                 # The name of the category for this data source.
