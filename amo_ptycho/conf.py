@@ -11,7 +11,7 @@ from backend import add_record
 from simulation.ptycho import Simulation
 
 # Define the experiment
-sample_filename = 'pseudo_star.png'
+sample_filename = 'amo_ptycho/pseudo_star.png'
 
 # Simulate the experiment
 sim = Simulation()
@@ -19,13 +19,6 @@ sim.loadBinarySample(sample_filename)
 sim.defineIllumination()
 sim.defineExitWave()
 sim.propagate()
-
-# Draw frames randomly
-#numpy.random.seed()
-#select = numpy.random.randint(0,sim.nframes)
-
-# Draw frames in order
-select = numpy.arange(sim.nframes)
 
 state = {
     'Facility': 'Dummy',
@@ -41,7 +34,7 @@ state = {
             'CCD': {
                 # A function that will generate the data for every event
                 #'data': lambda: numpy.log(frames[numpy.random.randint(0,N)]),
-                'data': lambda: sim.frames[select],
+                'data': lambda: sim.get_next_frame(),
                 # The units to be used
                 'unit': 'ADU',     
                 # The name of the category for this data source.
